@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice Auth</title>
+<style>
+  :root { --ink:#16202a; --mute:#5b6773; --line:#d5dbe1; --bg:#f4f6f8; --card:#fff; --acc:#b8461b; --ok:#1d7a3e; --bad:#b3261e; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink); background:var(--bg); }
+  header { background:var(--ink); color:#fff; padding:14px 22px; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; letter-spacing:.02em; }
+  header .tag { font-size:12px; opacity:.75; }
+  main { max-width:1100px; margin:0 auto; padding:18px; display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); }
+  section.panel { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px 18px; }
+  section.wide { grid-column:1/-1; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--mute); margin:0 0 12px; }
+  label { display:block; font-size:12px; color:var(--mute); margin:10px 0 3px; }
+  input, select { width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:5px; font:inherit; background:#fff; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  button { font:inherit; font-size:14px; padding:7px 12px; border-radius:5px; border:1px solid var(--ink); background:#fff; color:var(--ink); cursor:pointer; margin:8px 6px 0 0; }
+  button.primary { background:var(--ink); color:#fff; }
+  button.danger { border-color:var(--bad); color:var(--bad); }
+  button:disabled { opacity:.4; cursor:default; }
+  .mono { font-family:ui-monospace,Menlo,Consolas,monospace; }
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:4px 12px; font-size:14px; margin-top:6px; }
+  .kv dt { color:var(--mute); } .kv dd { margin:0; }
+  .note { font-size:12.5px; color:var(--mute); margin-top:10px; }
+  .warn { background:#fff4e5; border:1px solid #f0c48a; color:#6b3d00; border-radius:6px; padding:9px 11px; font-size:13px; margin-top:10px; }
+  .result { margin-top:8px; font-weight:600; min-height:1.4em; }
+  .result.ok { color:var(--ok); } .result.bad { color:var(--bad); }
+  .contitle { font:700 26px/1.2 system-ui,sans-serif; margin:2px 0 4px; }
+  details summary { cursor:pointer; font-weight:600; }
+  .spec { font-size:13.5px; } .spec code { background:#eef1f4; padding:1px 4px; border-radius:3px; }
+
+  /* ---------- printed card ---------- */
+  #cards { display:grid; gap:18px; }
+  .card { background:#fff; border:2px solid #000; padding:14px 16px; color:#000; font-size:11px; }
+  .card .banner { text-align:center; font-weight:800; letter-spacing:.12em; border:2px solid #000; padding:3px; margin-bottom:8px; font-size:12px; }
+  .card .hd { display:grid; grid-template-columns:1fr 2fr 2fr; gap:2px 14px; border-bottom:1.5px solid #000; padding-bottom:6px; margin-bottom:8px; }
+  .card .hd b { display:block; font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:#333; }
+  .card .hd .cardno { font-size:34px; font-weight:800; line-height:1; border:2.5px solid #000; padding:3px 8px; text-align:center; }
+  .card h3 { font-size:11px; margin:9px 0 4px; text-transform:uppercase; letter-spacing:.04em; }
+  .card .codes { columns:3; column-gap:16px; }
+  .card .codes div { break-inside:avoid; border-bottom:.5px dotted #999; padding:2px 0; display:flex; align-items:baseline; gap:7px; }
+  .card .codes .bx { font-size:12px; }
+  .card .codes .ln { font:600 10.5px ui-monospace,Menlo,Consolas,monospace; color:#333; width:46px; }
+  .card .codes b { font:700 13px ui-monospace,Menlo,Consolas,monospace; letter-spacing:.05em; width:24px; }
+  .card .codes i { font-style:normal; font-size:9px; color:#444; }
+  .card table { width:100%; border-collapse:collapse; font-size:10.5px; }
+  .card td, .card th { border:.75px solid #555; padding:2px 5px; text-align:left; }
+  .card th { background:#eee; font-size:9px; text-transform:uppercase; }
+  .card td b { font:700 12.5px ui-monospace,Menlo,Consolas,monospace; }
+  .card td span { color:#444; font-size:9.5px; }
+  .card td.box { width:16px; }
+  .card .cr { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .card .ft { margin-top:9px; border-top:1.5px solid #000; padding-top:5px; font-size:9.5px; }
+
+  @media print {
+    @page { size: letter; margin: 0.4in; }
+    body { background:#fff; }
+    header, main > section:not(#cardsPanel), #cardsPanel > :not(#cards) { display:none !important; }
+    main { display:block; padding:0; max-width:none; }
+    #cardsPanel { border:0; padding:0; }
+    .card { page-break-after:always; break-after:page; }
+    .card .cr, .card .ft { break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Voice Auth</h1><span class="tag">numbered radio authentication cards · offline · nothing leaves this device</span>
+</header>
+<main>
+
+<section class="panel">
+  <h2>1 · Incident &amp; key</h2>
+  <label>Incident name</label><input id="incName" placeholder="e.g. Cedar Creek">
+  <div class="row">
+    <div><label>Incident number</label><input id="incNo" placeholder="OR-XXX-000000"></div>
+    <div><label>Key custodian</label><input id="custodian" placeholder="Name / position"></div>
+  </div>
+  <dl class="kv" id="keyInfo"><dt>Key</dt><dd>None loaded</dd></dl>
+  <div>
+    <button class="primary" id="btnNew">Generate new key</button>
+    <button id="btnImport">Import key file…</button>
+    <button id="btnExport" disabled>Export key file</button>
+    <button class="danger" id="btnRotate" disabled>Rotate key</button>
+    <button id="btnShow" disabled>Show secret</button>
+  </div>
+  <input type="file" id="fileIn" accept=".json,application/json" hidden>
+  <div id="secretBox" class="mono note" hidden></div>
+  <div class="warn">Nothing is saved when this page closes. <b>Export the key file</b> and keep it under the custodian's control (encrypted USB, not email) or you won't be able to reprint cards.</div>
+</section>
+
+<section class="panel">
+  <h2>2 · Cards</h2>
+  <div class="row">
+    <div><label>Daily order codes</label><input value="31 (one per day of the month)" disabled></div>
+    <div><label>Challenges per card</label><input type="number" id="nCh" value="10" min="4" max="100"></div>
+  </div>
+  <div class="row">
+    <div><label>Print starting at card #</label><input type="number" id="fromCard" value="1" min="1" max="9999"></div>
+    <div><label>Cards to print</label>
+      <select id="cardCount"><option selected>1</option><option>2</option><option>3</option><option>5</option><option>10</option><option>20</option><option>30</option></select></div>
+  </div>
+  <p class="note">Cards have no dates or times. A card stays in effect until the custodian announces the next one. Day 21 on Card 4 is always the same code. Switch cards at least monthly, because daily codes repeat each month.</p>
+  <button class="primary" id="btnBuild" disabled>Build cards</button>
+  <button id="btnPrint" disabled>Print / Save as PDF</button>
+</section>
+
+<section class="panel">
+  <h2>3 · Card console</h2>
+  <label>Card in effect</label><input type="number" id="conCard" value="1" min="1" max="9999">
+  <div class="contitle" id="conTitle"></div>
+  <label>Order code: day of month (and code to check)</label>
+  <div class="row">
+    <input id="chkLine" class="mono" type="number" min="1" max="31" placeholder="Day, e.g. 21">
+    <input id="chkCode" class="mono" maxlength="2" placeholder="Code, e.g. KB" style="text-transform:uppercase">
+  </div>
+  <div class="result" id="chkLineRes"></div>
+  <label>Answer a challenge</label>
+  <input id="chkCh" class="mono" maxlength="3" placeholder="letter-number-letter, e.g. A3C" style="text-transform:uppercase">
+  <div class="result" id="chkChRes"></div>
+  <p class="note">The day box starts at today's date on this computer. Change it if the custodian has announced a different day.</p>
+</section>
+
+<section class="panel wide" id="cardsPanel">
+  <h2>4 · Preview</h2>
+  <p class="note" id="cardsNote">Build cards to preview them here. Printing produces one page per card.</p>
+  <div id="cards"></div>
+</section>
+
+<section class="panel wide">
+  <h2>5 · Self-test &amp; algorithm spec</h2>
+  <div id="selftest" class="result"></div>
+  <details class="spec"><summary>Algorithm spec. Any other implementation must match this exactly.</summary>
+  <p><b>Key.</b> 20 random bytes (160-bit) from the browser's cryptographic random generator, exchanged as RFC 4648 Base32. Key fingerprint = first 2 bytes of SHA-256(key), in hex.</p>
+  <p><b>Card label.</b> <code>"CARD-" + N</code> for card number N (1, 2, 3…). Nothing depends on dates, times or time zones.</p>
+  <p><b>Daily order codes.</b> For i = 0, 1, 2…: <code>h = HMAC-SHA256(key, "VAUTH1-O|" + label + "|" + i)</code>; <code>n = ((h[0]&lt;&lt;8)|h[1]) mod 676</code>; code = letter[n div 26] + letter[n mod 26]. Duplicates within a card are skipped. The d-th distinct code is the code for day d of the month (1–31). Read aloud in NATO phonetics.</p>
+  <p><b>Challenge/response.</b> Format letter-digit-letter (e.g. A3C), 6,760 possible values. <code>h = HMAC-SHA256(key, "VAUTH1-R|" + label + "|" + CHALLENGE)</code>; <code>n = ((h[0]&lt;&lt;16)|(h[1]&lt;&lt;8)|h[2]) mod 6760</code>; response = letter[n div 260] + digit[(n div 26) mod 10] + letter[n mod 26]. Printed challenges use the same mapping on <code>"VAUTH1-C|" + label + "|" + i</code>, skipping duplicates.</p>
+  <p><b>Test vectors.</b> Key = ASCII "12345678901234567890", Card 1: daily codes for days 1–3 = <b>RZ, YB, WT</b>; challenges 1–3 = <b>A6A, W2F, X8O</b>; challenge A3C → <b>I7J</b>. Fingerprint 6ED6.</p>
+  <p><b>Strength.</b> A guessed order code has a 1 in 676 chance. A guessed response has a 1 in 6,760 chance. A daily code can be replayed by anyone who overhears it until the day ends, and it comes back on the same day next month on the same card. Struck challenge lines can't be replayed. This catches impersonators and pranksters, not a determined adversary with many attempts, so a failed code on a critical order always means confirm by another path.</p>
+  <p><b>Operating rules.</b> The custodian announces the card in effect ("Authentication: Card Four") and, across time zones or near midnight, the day. Strike every challenge line after use. If codes fail, first confirm the card and day. Switch to a new card at least monthly, when challenges run low, or when a card may be compromised. Rotate the key if a set of cards is lost.</p>
+  </details>
+</section>
+</main>
+
+<script>/*CORE*/</script>
+<script>/*APP*/</script>
+</body>
+</html>
