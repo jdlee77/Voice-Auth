@@ -14,7 +14,14 @@ Open it in Chrome, Edge or Firefox. It runs entirely in the browser with no netw
 
 ## Phone card (no app to install)
 
-Phones can show the same cards using the web page at **https://jdlee77.github.io/Voice-Auth/card/**. It's a regular web page: nothing to install.
+Phones can show the same cards using **https://jdlee77.github.io/Voice-Auth/card/**. It can be installed to the home screen like an app, with no app store, and once installed it opens with no signal.
+
+**Install it first, then enroll from the installed app.** On iPhone, an installed web app has its own storage, so a key set up in Safari does not carry over.
+
+- **iPhone (Safari):** open the link, tap **Share → Add to Home Screen**, then open **Voice Auth** from the home screen.
+- **Android (Chrome):** open the link and tap **Install app** on the page (or **⋮ → Install app**), then open it from the home screen.
+
+Then:
 
 1. **Create an enrollment QR code.** The custodian goes to section 3 of the tool and sets a passphrase. The QR code holds the key, encrypted with that passphrase (AES-256-GCM, PBKDF2-SHA256 with 310,000 iterations).
 2. **Enroll the phone.** The user opens `/card/`, scans the QR code (or uses a photo of it, or pastes the code) and enters the passphrase. Give the QR code and passphrase separately.
@@ -22,8 +29,9 @@ Phones can show the same cards using the web page at **https://jdlee77.github.io
 4. **Use the card.** It shows the card in effect, today's daily code, and the response to **any** challenge. The page locks after 2 minutes idle or when you leave it.
 
 Limits:
-- The page needs a connection to open. Once open, it works without signal.
-- iPhone Safari may clear the stored key after about 7 days without a visit, so re-enroll if that happens.
+- Installed: opens and works with no signal. In the browser only: needs a connection to open.
+- If used in the iPhone browser instead of installed, Safari may clear the stored key after about 7 days without a visit.
+- Updates: when the page changes, the installed app picks up the new version the next time it's opened with a connection, and uses it from the following launch.
 - Browser storage is weaker than a native app's secure storage, so treat a lost phone like a lost card: the custodian switches cards or rotates the key.
 
 ## Using the tool
@@ -50,6 +58,6 @@ Limits:
 The page is built from `src/`:
 
 ```
-python3 build.py      # writes voice-auth.html, index.html and card/index.html
+python3 build.py      # writes voice-auth.html, index.html and card/ (page, manifest, icons, service worker)
 node tests/test.js    # crypto and test-vector checks
 ```

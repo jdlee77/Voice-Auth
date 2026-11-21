@@ -161,10 +161,31 @@
   }
   $('chIn').addEventListener('input', respond);
 
+  // ---------- install ----------
+  const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  let deferredPrompt = null;
+  function installHint() {
+    if (standalone()) { $('installBox').hidden = true; return; }
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    $('installHow').innerHTML = (ios
+      ? 'In Safari, tap <b>Share</b>, then <b>Add to Home Screen</b>. Then open Voice Auth from your home screen and set it up there.'
+      : deferredPrompt ? 'Tap <b>Install app</b>, then open Voice Auth from your home screen and set it up there.'
+        : 'In your browser menu, choose <b>Install app</b> or <b>Add to Home screen</b>. Then open Voice Auth from your home screen and set it up there.')
+      + ' A key set up in the browser does not carry over to the installed app.';
+    $('btnInstall').hidden = !deferredPrompt;
+    $('installBox').hidden = !!rec;   // already set up here: don't nag
+  }
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installHint(); });
+  $('btnInstall').onclick = async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; installHint(); };
+  window.addEventListener('appinstalled', () => { $('installBox').hidden = true; });
+  // Service workers only run on https (or localhost); elsewhere this quietly does nothing.
+  if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});
+
   // ---------- start ----------
   (async () => {
     if (!window.crypto || !crypto.subtle) { msg('enrollMsg', 'Open this page from its https:// address (the GitHub Pages site). It cannot run here.', 'bad'); show('scrEnroll'); return; }
     try { rec = await get('key'); } catch (e) { msg('enrollMsg', e.message + ' Private browsing may block storage.', 'bad'); show('scrEnroll'); return; }
     rec ? showUnlock() : show('scrEnroll');
+    installHint();
   })();
 })();

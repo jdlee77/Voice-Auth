@@ -2,11 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src blob: mediastream:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: mediastream:; manifest-src 'self'; worker-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex">
 <title>Voice Auth · Card</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png" type="image/png">
+<meta name="theme-color" content="#16202a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Voice Auth">
 <style>
   :root { --ink:#16202a; --mute:#5b6773; --line:#d5dbe1; --bg:#f4f6f8; --ok:#1d7a3e; --bad:#b3261e; --acc:#b8461b; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -41,12 +48,19 @@
   .chin { font:700 28px ui-monospace,Menlo,Consolas,monospace; text-align:center; text-transform:uppercase; letter-spacing:.2em; }
   .pin { font-size:28px; text-align:center; letter-spacing:.4em; }
   .meta { font-size:13px; color:var(--mute); text-align:center; }
+  .install { background:#fff4e5; border:1px solid #f0c48a; color:#6b3d00; border-radius:12px; padding:14px 16px; margin-bottom:14px; font-size:15px; }
+  .install b { color:#4a2a00; } .install button { margin-top:8px; }
   .today { width:auto; padding:6px 14px; font-size:14px; margin:8px auto 0; display:block; }
 </style>
 </head>
 <body>
 <header><h1>Voice Auth · Card</h1><button id="btnLock" hidden>Lock</button></header>
 <main>
+<div class="install" id="installBox" hidden>
+  <b>Install this card on your phone first.</b>
+  <div id="installHow"></div>
+  <button class="primary" id="btnInstall" hidden>Install app</button>
+</div>
 
 <!-- 1. Enroll -->
 <section class="screen" id="scrEnroll">
@@ -10596,11 +10610,32 @@ if (typeof module !== 'undefined') module.exports = Vault;
   }
   $('chIn').addEventListener('input', respond);
 
+  // ---------- install ----------
+  const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  let deferredPrompt = null;
+  function installHint() {
+    if (standalone()) { $('installBox').hidden = true; return; }
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    $('installHow').innerHTML = (ios
+      ? 'In Safari, tap <b>Share</b>, then <b>Add to Home Screen</b>. Then open Voice Auth from your home screen and set it up there.'
+      : deferredPrompt ? 'Tap <b>Install app</b>, then open Voice Auth from your home screen and set it up there.'
+        : 'In your browser menu, choose <b>Install app</b> or <b>Add to Home screen</b>. Then open Voice Auth from your home screen and set it up there.')
+      + ' A key set up in the browser does not carry over to the installed app.';
+    $('btnInstall').hidden = !deferredPrompt;
+    $('installBox').hidden = !!rec;   // already set up here: don't nag
+  }
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installHint(); });
+  $('btnInstall').onclick = async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; installHint(); };
+  window.addEventListener('appinstalled', () => { $('installBox').hidden = true; });
+  // Service workers only run on https (or localhost); elsewhere this quietly does nothing.
+  if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});
+
   // ---------- start ----------
   (async () => {
     if (!window.crypto || !crypto.subtle) { msg('enrollMsg', 'Open this page from its https:// address (the GitHub Pages site). It cannot run here.', 'bad'); show('scrEnroll'); return; }
     try { rec = await get('key'); } catch (e) { msg('enrollMsg', e.message + ' Private browsing may block storage.', 'bad'); show('scrEnroll'); return; }
     rec ? showUnlock() : show('scrEnroll');
+    installHint();
   })();
 })();
 </script>
