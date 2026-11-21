@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice Auth</title>
+<style>
+  :root { --ink:#16202a; --mute:#5b6773; --line:#d5dbe1; --bg:#f4f6f8; --card:#fff; --acc:#b8461b; --ok:#1d7a3e; --bad:#b3261e; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink); background:var(--bg); }
+  header { background:var(--ink); color:#fff; padding:14px 22px; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; letter-spacing:.02em; }
+  header .tag { font-size:12px; opacity:.75; }
+  main { max-width:1100px; margin:0 auto; padding:18px; display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); }
+  section.panel { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px 18px; }
+  section.wide { grid-column:1/-1; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--mute); margin:0 0 12px; }
+  label { display:block; font-size:12px; color:var(--mute); margin:10px 0 3px; }
+  input, select { width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:5px; font:inherit; background:#fff; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  button { font:inherit; font-size:14px; padding:7px 12px; border-radius:5px; border:1px solid var(--ink); background:#fff; color:var(--ink); cursor:pointer; margin:8px 6px 0 0; }
+  button.primary { background:var(--ink); color:#fff; }
+  button.danger { border-color:var(--bad); color:var(--bad); }
+  button:disabled { opacity:.4; cursor:default; }
+  .mono { font-family:ui-monospace,Menlo,Consolas,monospace; }
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:4px 12px; font-size:14px; margin-top:6px; }
+  .kv dt { color:var(--mute); } .kv dd { margin:0; }
+  .note { font-size:12.5px; color:var(--mute); margin-top:10px; }
+  .warn { background:#fff4e5; border:1px solid #f0c48a; color:#6b3d00; border-radius:6px; padding:9px 11px; font-size:13px; margin-top:10px; }
+  .result { margin-top:8px; font-weight:600; min-height:1.4em; }
+  .result.ok { color:var(--ok); } .result.bad { color:var(--bad); }
+  .contitle { font:700 26px/1.2 system-ui,sans-serif; margin:2px 0 4px; }
+  details summary { cursor:pointer; font-weight:600; }
+  .spec { font-size:13.5px; } .spec code { background:#eef1f4; padding:1px 4px; border-radius:3px; }
+
+  /* ---------- printed card ---------- */
+  #cards { display:grid; gap:18px; }
+  .card { background:#fff; border:2px solid #000; padding:14px 16px; color:#000; font-size:11px; }
+  .card .banner { text-align:center; font-weight:800; letter-spacing:.12em; border:2px solid #000; padding:3px; margin-bottom:8px; font-size:12px; }
+  .card .hd { display:grid; grid-template-columns:1fr 2fr 2fr; gap:2px 14px; border-bottom:1.5px solid #000; padding-bottom:6px; margin-bottom:8px; }
+  .card .hd b { display:block; font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:#333; }
+  .card .hd .cardno { font-size:34px; font-weight:800; line-height:1; border:2.5px solid #000; padding:3px 8px; text-align:center; }
+  .card h3 { font-size:11px; margin:9px 0 4px; text-transform:uppercase; letter-spacing:.04em; }
+  .card .codes { columns:3; column-gap:16px; }
+  .card .codes div { break-inside:avoid; border-bottom:.5px dotted #999; padding:2px 0; display:flex; align-items:baseline; gap:7px; }
+  .card .codes .bx { font-size:12px; }
+  .card .codes .ln { font:600 10.5px ui-monospace,Menlo,Consolas,monospace; color:#333; width:46px; }
+  .card .codes b { font:700 13px ui-monospace,Menlo,Consolas,monospace; letter-spacing:.05em; width:24px; }
+  .card .codes i { font-style:normal; font-size:9px; color:#444; }
+  .card table { width:100%; border-collapse:collapse; font-size:10.5px; }
+  .card td, .card th { border:.75px solid #555; padding:2px 5px; text-align:left; }
+  .card th { background:#eee; font-size:9px; text-transform:uppercase; }
+  .card td b { font:700 12.5px ui-monospace,Menlo,Consolas,monospace; }
+  .card td span { color:#444; font-size:9.5px; }
+  .card td.box { width:16px; }
+  .card .cr { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .card .ft { margin-top:9px; border-top:1.5px solid #000; padding-top:5px; font-size:9.5px; }
+
+  @media print {
+    @page { size: letter; margin: 0.4in; }
+    body { background:#fff; }
+    header, main > section:not(#cardsPanel), #cardsPanel > :not(#cards) { display:none !important; }
+    main { display:block; padding:0; max-width:none; }
+    #cardsPanel { border:0; padding:0; }
+    .card { page-break-after:always; break-after:page; }
+    .card .cr, .card .ft { break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Voice Auth</h1><span class="tag">numbered radio authentication cards · offline · nothing leaves this device</span>
+</header>
+<main>
+
+<section class="panel">
+  <h2>1 · Incident &amp; key</h2>
+  <label>Incident name</label><input id="incName" placeholder="e.g. Cedar Creek">
+  <div class="row">
+    <div><label>Incident number</label><input id="incNo" placeholder="OR-XXX-000000"></div>
+    <div><label>Key custodian</label><input id="custodian" placeholder="Name / position"></div>
+  </div>
+  <dl class="kv" id="keyInfo"><dt>Key</dt><dd>None loaded</dd></dl>
+  <div>
+    <button class="primary" id="btnNew">Generate new key</button>
+    <button id="btnImport">Import key file…</button>
+    <button id="btnExport" disabled>Export key file</button>
+    <button class="danger" id="btnRotate" disabled>Rotate key</button>
+    <button id="btnShow" disabled>Show secret</button>
+  </div>
+  <input type="file" id="fileIn" accept=".json,application/json" hidden>
+  <div id="secretBox" class="mono note" hidden></div>
+  <div class="warn">Nothing is saved when this page closes. <b>Export the key file</b> and keep it under the custodian's control (encrypted USB, not email) or you won't be able to reprint cards.</div>
+</section>
+
+<section class="panel">
+  <h2>2 · Cards</h2>
+  <div class="row">
+    <div><label>Daily order codes</label><input value="31 (one per day of the month)" disabled></div>
+    <div><label>Challenges per card</label><input type="number" id="nCh" value="10" min="4" max="100"></div>
+  </div>
+  <div class="row">
+    <div><label>Print starting at card #</label><input type="number" id="fromCard" value="1" min="1" max="9999"></div>
+    <div><label>Cards to print</label>
+      <select id="cardCount"><option selected>1</option><option>2</option><option>3</option><option>5</option><option>10</option><option>20</option><option>30</option></select></div>
+  </div>
+  <p class="note">Cards have no dates or times. A card stays in effect until the custodian announces the next one. Day 21 on Card 4 is always the same code. Switch cards at least monthly, because daily codes repeat each month.</p>
+  <button class="primary" id="btnBuild" disabled>Build cards</button>
+  <button id="btnPrint" disabled>Print / Save as PDF</button>
+</section>
+
+<section class="panel">
+  <h2>3 · Card console</h2>
+  <label>Card in effect</label><input type="number" id="conCard" value="1" min="1" max="9999">
+  <div class="contitle" id="conTitle"></div>
+  <label>Order code: day of month (and code to check)</label>
+  <div class="row">
+    <input id="chkLine" class="mono" type="number" min="1" max="31" placeholder="Day, e.g. 21">
+    <input id="chkCode" class="mono" maxlength="2" placeholder="Code, e.g. KB" style="text-transform:uppercase">
+  </div>
+  <div class="result" id="chkLineRes"></div>
+  <label>Answer a challenge</label>
+  <input id="chkCh" class="mono" maxlength="3" placeholder="letter-number-letter, e.g. A3C" style="text-transform:uppercase">
+  <div class="result" id="chkChRes"></div>
+  <p class="note">The day box starts at today's date on this computer. Change it if the custodian has announced a different day.</p>
+</section>
+
+<section class="panel wide" id="cardsPanel">
+  <h2>4 · Preview</h2>
+  <p class="note" id="cardsNote">Build cards to preview them here. Printing produces one page per card.</p>
+  <div id="cards"></div>
+</section>
+
+<section class="panel wide">
+  <h2>5 · Self-test &amp; algorithm spec</h2>
+  <div id="selftest" class="result"></div>
+  <details class="spec"><summary>Algorithm spec. Any other implementation must match this exactly.</summary>
+  <p><b>Key.</b> 20 random bytes (160-bit) from the browser's cryptographic random generator, exchanged as RFC 4648 Base32. Key fingerprint = first 2 bytes of SHA-256(key), in hex.</p>
+  <p><b>Card label.</b> <code>"CARD-" + N</code> for card number N (1, 2, 3…). Nothing depends on dates, times or time zones.</p>
+  <p><b>Daily order codes.</b> For i = 0, 1, 2…: <code>h = HMAC-SHA256(key, "VAUTH1-O|" + label + "|" + i)</code>; <code>n = ((h[0]&lt;&lt;8)|h[1]) mod 676</code>; code = letter[n div 26] + letter[n mod 26]. Duplicates within a card are skipped. The d-th distinct code is the code for day d of the month (1–31). Read aloud in NATO phonetics.</p>
+  <p><b>Challenge/response.</b> Format letter-digit-letter (e.g. A3C), 6,760 possible values. <code>h = HMAC-SHA256(key, "VAUTH1-R|" + label + "|" + CHALLENGE)</code>; <code>n = ((h[0]&lt;&lt;16)|(h[1]&lt;&lt;8)|h[2]) mod 6760</code>; response = letter[n div 260] + digit[(n div 26) mod 10] + letter[n mod 26]. Printed challenges use the same mapping on <code>"VAUTH1-C|" + label + "|" + i</code>, skipping duplicates.</p>
+  <p><b>Test vectors.</b> Key = ASCII "12345678901234567890", Card 1: daily codes for days 1–3 = <b>RZ, YB, WT</b>; challenges 1–3 = <b>A6A, W2F, X8O</b>; challenge A3C → <b>I7J</b>. Fingerprint 6ED6.</p>
+  <p><b>Strength.</b> A guessed order code has a 1 in 676 chance. A guessed response has a 1 in 6,760 chance. A daily code can be replayed by anyone who overhears it until the day ends, and it comes back on the same day next month on the same card. Struck challenge lines can't be replayed. This catches impersonators and pranksters, not a determined adversary with many attempts, so a failed code on a critical order always means confirm by another path.</p>
+  <p><b>Operating rules.</b> The custodian announces the card in effect ("Authentication: Card Four") and, across time zones or near midnight, the day. Strike every challenge line after use. If codes fail, first confirm the card and day. Switch to a new card at least monthly, when challenges run low, or when a card may be compromised. Rotate the key if a set of cards is lost.</p>
+  </details>
+</section>
+</main>
+
+<script>// ===== Voice Auth core: pure JS, no network, no dependencies =====
+const VA = (() => {
+  const enc = (s) => new TextEncoder().encode(s);
+
+  function pad(msg) {
+    const ml = msg.length, len = ((ml + 9 + 63) >> 6) << 6;
+    const b = new Uint8Array(len); b.set(msg); b[ml] = 0x80;
+    const dv = new DataView(b.buffer), bits = ml * 8;
+    dv.setUint32(len - 4, bits >>> 0); dv.setUint32(len - 8, Math.floor(bits / 0x100000000));
+    return dv;
+  }
+  const rotl = (x, n) => (x << n) | (x >>> (32 - n));
+  const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+
+  function sha1(msg) {
+    const dv = pad(msg), w = new Uint32Array(80);
+    let h = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0];
+    for (let off = 0; off < dv.byteLength; off += 64) {
+      for (let i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4);
+      for (let i = 16; i < 80; i++) w[i] = rotl(w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16], 1);
+      let [a, b, c, d, e] = h;
+      for (let i = 0; i < 80; i++) {
+        let f, k;
+        if (i < 20) { f = (b & c) | (~b & d); k = 0x5A827999; }
+        else if (i < 40) { f = b ^ c ^ d; k = 0x6ED9EBA1; }
+        else if (i < 60) { f = (b & c) | (b & d) | (c & d); k = 0x8F1BBCDC; }
+        else { f = b ^ c ^ d; k = 0xCA62C1D6; }
+        const t = (rotl(a, 5) + f + e + k + w[i]) >>> 0;
+        e = d; d = c; c = rotl(b, 30); b = a; a = t;
+      }
+      h = h.map((v, i) => (v + [a, b, c, d, e][i]) >>> 0);
+    }
+    const out = new Uint8Array(20), o = new DataView(out.buffer);
+    h.forEach((v, i) => o.setUint32(i * 4, v)); return out;
+  }
+
+  const K256 = new Uint32Array([
+    0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+    0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+    0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+    0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+    0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]);
+
+  function sha256(msg) {
+    const dv = pad(msg), w = new Uint32Array(64);
+    let h = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+    for (let off = 0; off < dv.byteLength; off += 64) {
+      for (let i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4);
+      for (let i = 16; i < 64; i++) {
+        const s0 = rotr(w[i-15], 7) ^ rotr(w[i-15], 18) ^ (w[i-15] >>> 3);
+        const s1 = rotr(w[i-2], 17) ^ rotr(w[i-2], 19) ^ (w[i-2] >>> 10);
+        w[i] = (w[i-16] + s0 + w[i-7] + s1) >>> 0;
+      }
+      let [a, b, c, d, e, f, g, hh] = h;
+      for (let i = 0; i < 64; i++) {
+        const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+        const ch = (e & f) ^ (~e & g);
+        const t1 = (hh + S1 + ch + K256[i] + w[i]) >>> 0;
+        const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+        const mj = (a & b) ^ (a & c) ^ (b & c);
+        const t2 = (S0 + mj) >>> 0;
+        hh = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+      }
+      h = h.map((v, i) => (v + [a, b, c, d, e, f, g, hh][i]) >>> 0);
+    }
+    const out = new Uint8Array(32), o = new DataView(out.buffer);
+    h.forEach((v, i) => o.setUint32(i * 4, v)); return out;
+  }
+
+  function hmac(hash, key, msg) {
+    const B = 64;
+    if (key.length > B) key = hash(key);
+    const k = new Uint8Array(B); k.set(key);
+    const inner = new Uint8Array(B + msg.length), outerKey = new Uint8Array(B);
+    for (let i = 0; i < B; i++) { inner[i] = k[i] ^ 0x36; outerKey[i] = k[i] ^ 0x5c; }
+    inner.set(msg, B);
+    const ih = hash(inner), outer = new Uint8Array(B + ih.length);
+    outer.set(outerKey); outer.set(ih, B);
+    return hash(outer);
+  }
+
+  // RFC 4648 Base32 (no padding)
+  const AZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  function b32encode(bytes) {
+    let bits = 0, val = 0, out = '';
+    for (const b of bytes) { val = (val << 8) | b; bits += 8;
+      while (bits >= 5) { out += B32[(val >>> (bits - 5)) & 31]; bits -= 5; } }
+    if (bits > 0) out += B32[(val << (5 - bits)) & 31];
+    return out;
+  }
+  function b32decode(s) {
+    s = s.toUpperCase().replace(/[\s=-]/g, '');
+    let bits = 0, val = 0; const out = [];
+    for (const ch of s) { const i = B32.indexOf(ch);
+      if (i < 0) throw new Error('Invalid Base32 character: ' + ch);
+      val = (val << 5) | i; bits += 5;
+      if (bits >= 8) { out.push((val >>> (bits - 8)) & 255); bits -= 8; } }
+    return new Uint8Array(out);
+  }
+
+  // RFC 4226 HOTP / RFC 6238 TOTP (HMAC-SHA1)
+  function hotpRaw(key, counter) {   // RFC 4226 dynamic truncation -> 31-bit integer
+    const c = new Uint8Array(8), dv = new DataView(c.buffer);
+    dv.setUint32(0, Math.floor(counter / 0x100000000)); dv.setUint32(4, counter >>> 0);
+    const h = hmac(sha1, key, c), o = h[19] & 15;
+    return ((h[o] & 0x7f) << 24) | (h[o+1] << 16) | (h[o+2] << 8) | h[o+3];
+  }
+  const hotp = (key, counter, digits = 6) => String(hotpRaw(key, counter) % 10 ** digits).padStart(digits, '0');
+  // Order code: same TOTP value, output as two letters (mod 676) instead of digits
+  const orderCode = (key, counter) => { const n = hotpRaw(key, counter) % 676; return AZ[Math.floor(n / 26)] + AZ[n % 26]; };
+  const totpCounter = (unixSec, step) => Math.floor(unixSec / step);
+  const totp = (key, unixSec, step, digits = 6) => hotp(key, totpCounter(unixSec, step), digits);
+
+  // Challenge/response (HMAC-SHA256, letter-digit-letter e.g. A3C)
+  const PHON = { A:'ALFA',B:'BRAVO',C:'CHARLIE',D:'DELTA',E:'ECHO',F:'FOXTROT',G:'GOLF',H:'HOTEL',
+    I:'INDIA',J:'JULIETT',K:'KILO',L:'LIMA',M:'MIKE',N:'NOVEMBER',O:'OSCAR',P:'PAPA',Q:'QUEBEC',
+    R:'ROMEO',S:'SIERRA',T:'TANGO',U:'UNIFORM',V:'VICTOR',W:'WHISKEY',X:'XRAY',Y:'YANKEE',Z:'ZULU',
+    0:'ZERO',1:'ONE',2:'TWO',3:'THREE',4:'FOUR',5:'FIVE',6:'SIX',7:'SEVEN',8:'EIGHT',9:'NINER' };
+  const ldl = (h) => { const n = ((h[0] << 16) | (h[1] << 8) | h[2]) % 6760;
+    return AZ[Math.floor(n / 260)] + (Math.floor(n / 26) % 10) + AZ[n % 26]; };
+  const phon = (s) => s.split('').map((c) => PHON[c] || c).join(' ');
+  const periodLabel = (startMs) => new Date(startMs).toISOString().slice(0, 16) + 'Z';
+  const crResponse = (key, label, ch) =>
+    ldl(hmac(sha256, key, enc('VAUTH1-R|' + label + '|' + ch.toUpperCase())));
+  function crChallenges(key, label, n) {
+    const out = [], seen = new Set();
+    for (let i = 0; out.length < n && i < 5000; i++) {
+      const c = ldl(hmac(sha256, key, enc('VAUTH1-C|' + label + '|' + i)));
+      if (!seen.has(c)) { seen.add(c); out.push(c); }
+    }
+    return out;
+  }
+  // Time-free cards: everything derives from key + card number
+  const cardLabel = (no) => 'CARD-' + no;
+  const two = (h) => { const n = ((h[0] << 8) | h[1]) % 676; return AZ[Math.floor(n / 26)] + AZ[n % 26]; };
+  function orderLines(key, no, n) {
+    const out = [], seen = new Set();
+    for (let i = 0; out.length < n && i < 5000; i++) {
+      const c = two(hmac(sha256, key, enc('VAUTH1-O|' + cardLabel(no) + '|' + i)));
+      if (!seen.has(c)) { seen.add(c); out.push(c); }
+    }
+    return out;
+  }
+  const hex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+  const fingerprint = (key) => hex(sha256(key).slice(0, 2));
+
+  return { enc, sha1, sha256, hmac, hex, b32encode, b32decode, hotp, hotpRaw, orderCode, totp, totpCounter,
+           crResponse, crChallenges, periodLabel, phon, fingerprint, cardLabel, orderLines };
+})();
+if (typeof module !== 'undefined') module.exports = VA;
+</script>
+<script>(() => {
+  const $ = (id) => document.getElementById(id);
+  const S = { key: null, secret: '', version: 0, created: '', exported: true, cards: null };
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const when = (iso) => iso ? new Date(iso).toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+  const intIn = (id, lo, hi) => Math.min(hi, Math.max(lo, Math.floor(+$(id).value || lo)));
+
+  // ---------- key handling ----------
+  function setKey(bytes, version, created) {
+    S.key = bytes; S.secret = VA.b32encode(bytes); S.version = version; S.created = created;
+    $('secretBox').hidden = true; $('btnShow').textContent = 'Show secret';
+    ['btnExport', 'btnRotate', 'btnShow', 'btnBuild'].forEach((b) => ($(b).disabled = false));
+    renderKeyInfo(); clearCards(); refreshConsole();
+  }
+  function renderKeyInfo() {
+    $('keyInfo').innerHTML = S.key
+      ? `<dt>Fingerprint</dt><dd class="mono"><b>${VA.fingerprint(S.key)}</b> (read aloud to confirm everyone has the same key)</dd>
+         <dt>Version</dt><dd>v${S.version}${S.exported ? '' : ' · <span style="color:var(--bad)">not exported</span>'}</dd>
+         <dt>Created</dt><dd>${esc(when(S.created))}</dd>`
+      : '<dt>Key</dt><dd>None loaded</dd>';
+  }
+  function newKey(version) {
+    const b = new Uint8Array(20); crypto.getRandomValues(b);
+    S.exported = false; setKey(b, version, new Date().toISOString());
+  }
+  $('btnNew').onclick = () => {
+    if (S.key && !confirm('Replace the loaded key? Cards printed with it will no longer match this tool.')) return;
+    newKey(1);
+  };
+  $('btnRotate').onclick = () => {
+    if (!confirm('Rotate the key?\n\nEvery printed card stops working. Reprint the cards and announce the new fingerprint.')) return;
+    newKey(S.version + 1);
+  };
+  $('btnShow').onclick = () => {
+    const box = $('secretBox'); box.hidden = !box.hidden;
+    box.textContent = 'Secret (Base32): ' + S.secret.replace(/(.{4})/g, '$1 ').trim();
+    $('btnShow').textContent = box.hidden ? 'Show secret' : 'Hide secret';
+  };
+  $('btnExport').onclick = () => {
+    const data = { format: 'voiceauth-key', spec: 2, incident: $('incName').value, incidentNo: $('incNo').value,
+      custodian: $('custodian').value, version: S.version, created: S.created, fingerprint: VA.fingerprint(S.key),
+      secret: S.secret, dailyCodes: 31, challengesPerCard: intIn('nCh', 4, 100),
+      note: 'CONTROLLED. Authentication key. Anyone with this file can print valid cards.' };
+    const a = document.createElement('a');
+    a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data, null, 2));
+    const slug = ($('incName').value || 'key').replace(/[^a-z0-9]+/gi, '-');
+    a.download = `voiceauth-key-${slug}-v${S.version}-${VA.fingerprint(S.key)}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    S.exported = true; renderKeyInfo();
+  };
+  $('btnImport').onclick = () => $('fileIn').click();
+  $('fileIn').onchange = (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const d = JSON.parse(r.result);
+        if (d.format !== 'voiceauth-key') throw new Error('Not a Voice Auth key file');
+        if (d.spec !== 2) throw new Error('This key file is from the older time-based version');
+        const bytes = VA.b32decode(d.secret);
+        if (bytes.length < 16) throw new Error('Key too short');
+        if (d.fingerprint && d.fingerprint !== VA.fingerprint(bytes)) throw new Error('Fingerprint mismatch: file is damaged');
+        $('incName').value = d.incident || ''; $('incNo').value = d.incidentNo || ''; $('custodian').value = d.custodian || '';
+        if (d.challengesPerCard) $('nCh').value = String(d.challengesPerCard);
+        S.exported = true; setKey(bytes, d.version || 1, d.created || '');
+      } catch (err) { alert('Could not import key: ' + err.message); }
+      e.target.value = '';
+    };
+    r.readAsText(f);
+  };
+  window.addEventListener('beforeunload', (e) => { if (S.key && !S.exported) { e.preventDefault(); e.returnValue = ''; } });
+  ['incName', 'incNo', 'custodian', 'nCh', 'fromCard', 'cardCount'].forEach((id) => $(id).addEventListener('change', clearCards));
+
+  function clearCards() { if (!S.cards) return; S.cards = null; $('cards').innerHTML = ''; $('btnPrint').disabled = true;
+    $('cardsNote').textContent = 'Settings changed. Build cards again.'; }
+
+  // ---------- cards ----------
+  $('btnBuild').onclick = () => {
+    const nCh = intIn('nCh', 4, 100);
+    const from = intIn('fromCard', 1, 9999), count = +$('cardCount').value;
+    const inc = esc($('incName').value || '—'), incNo = esc($('incNo').value || '—'), cust = esc($('custodian').value || '—');
+    const fp = VA.fingerprint(S.key); let html = '';
+    for (let cardNo = from; cardNo < from + count; cardNo++) {
+      const label = VA.cardLabel(cardNo);
+      const days = VA.orderLines(S.key, cardNo, 31);
+      const codes = days.map((oc, i) =>
+        `<div><span class="ln">Day ${pad2(i + 1)}</span><b>${oc}</b><i>${VA.phon(oc)}</i></div>`).join('');
+      const ch = VA.crChallenges(S.key, label, nCh), half = Math.ceil(ch.length / 2);
+      const tbl = (list) => `<table><tr><th></th><th>Challenge</th><th>Response</th></tr>${list.map((x) => {
+        const r = VA.crResponse(S.key, label, x);
+        return `<tr><td class="box">☐</td><td><b>${x}</b> <span>${VA.phon(x)}</span></td><td><b>${r}</b> <span>${VA.phon(r)}</span></td></tr>`; }).join('')}</table>`;
+      html += `<div class="card">
+        <div class="banner">CONTROLLED · VOICE AUTHENTICATION CARD</div>
+        <div class="hd">
+          <div class="cardno"><b>Card</b>${cardNo}</div>
+          <div><b>Incident</b>${inc}<br><b style="margin-top:4px">Incident #</b>${incNo}</div>
+          <div><b>Key</b>v${S.version} · FP ${fp}<br><b style="margin-top:4px">Key custodian</b>${cust}</div>
+        </div>
+        <h3>1 · Daily order codes: use the code for today's day of the month. Sender says "Auth KILO BRAVO"; receiver checks it against today</h3>
+        <div class="codes">${codes}</div>
+        <h3>2 · Challenge / response: pick an unused challenge, strike it after use</h3>
+        <div class="cr">${tbl(ch.slice(0, half))}${tbl(ch.slice(half))}</div>
+        <div class="ft"><b>Rules:</b> Use only the card number announced by the key custodian. It stays in effect until a new card is announced. Around midnight, or when units are in different time zones, the day announced by the key custodian governs. Strike each challenge line after use and never reuse it. A wrong code or response means NOT authenticated: first confirm you are on the same card and day, then confirm by another path. Do not act on unauthenticated traffic. Report a lost card immediately to the key custodian, who will switch cards or rotate the key.</div>
+      </div>`;
+    }
+    $('cards').innerHTML = html; S.cards = true; $('btnPrint').disabled = false;
+    $('cardsNote').textContent = `Card${count > 1 ? 's' : ''} ${from}${count > 1 ? '–' + (from + count - 1) : ''} built for key v${S.version} (FP ${fp}). One page per card.`;
+  };
+  $('btnPrint').onclick = () => window.print();
+
+  // ---------- card console ----------
+  function refreshConsole() {
+    const no = intIn('conCard', 1, 9999);
+    $('conTitle').textContent = S.key ? `Card ${no} in effect` : 'Load a key first';
+    $('chkLine').dispatchEvent(new Event('input')); $('chkCh').dispatchEvent(new Event('input'));
+  }
+  $('conCard').addEventListener('input', refreshConsole);
+  const lineLookup = () => {
+    const el = $('chkLineRes'), day = Math.floor(+$('chkLine').value), code = $('chkCode').value.toUpperCase().replace(/[^A-Z]/g, '');
+    $('chkCode').value = code;
+    if (!S.key || !day) { el.textContent = ''; el.className = 'result'; return; }
+    if (day < 1 || day > 31) { el.className = 'result bad'; el.textContent = 'Day must be 1–31.'; return; }
+    const no = intIn('conCard', 1, 9999), exp = VA.orderLines(S.key, no, 31)[day - 1];
+    if (code.length < 2) { el.className = 'result'; el.textContent = `Card ${no}, day ${pad2(day)} = ${exp} (${VA.phon(exp)})`; return; }
+    el.className = 'result ' + (code === exp ? 'ok' : 'bad');
+    el.textContent = code === exp ? `✔ VALID: Card ${no}, day ${pad2(day)}`
+      : `✘ NOT VALID for Card ${no}, day ${pad2(day)}. Confirm the card and day, then confirm by another path.`;
+  };
+  $('chkLine').addEventListener('input', lineLookup); $('chkCode').addEventListener('input', lineLookup);
+  $('chkCh').addEventListener('input', () => {
+    const v = $('chkCh').value.toUpperCase().replace(/[^A-Z0-9]/g, ''), el = $('chkChRes');
+    $('chkCh').value = v;
+    if (!S.key || v.length < 3) { el.textContent = ''; el.className = 'result'; return; }
+    if (!/^[A-Z][0-9][A-Z]$/.test(v)) { el.className = 'result bad'; el.textContent = 'Format is letter-number-letter, e.g. A3C'; return; }
+    const no = intIn('conCard', 1, 9999), r = VA.crResponse(S.key, VA.cardLabel(no), v);
+    el.className = 'result ok'; el.textContent = `Card ${no}: ${VA.phon(v)} → respond ${r} (${VA.phon(r)})`;
+  });
+  $('chkLine').value = new Date().getDate();
+  refreshConsole();
+
+  // ---------- self-test ----------
+  (() => {
+    const k = VA.enc('12345678901234567890');
+    const h = (key, m) => VA.hex(VA.hmac(VA.sha256, key, VA.enc(m))).toLowerCase();
+    const ok = h(VA.enc('Jefe'), 'what do ya want for nothing?') === '5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843'
+      && h(new Uint8Array(20).fill(11), 'Hi There') === 'b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7'
+      && VA.orderLines(k, 1, 3).join(',') === 'RZ,YB,WT'
+      && VA.crChallenges(k, VA.cardLabel(1), 3).join(',') === 'A6A,W2F,X8O'
+      && VA.crResponse(k, VA.cardLabel(1), 'A3C') === 'I7J' && VA.fingerprint(k) === '6ED6';
+    const el = $('selftest'); el.className = 'result ' + (ok ? 'ok' : 'bad');
+    el.textContent = ok ? '✔ Self-test passed: RFC 4231 HMAC-SHA256 vectors and Voice Auth test vectors match.' : '✘ SELF-TEST FAILED. Do not use this copy.';
+  })();
+})();
+</script>
+</body>
+</html>

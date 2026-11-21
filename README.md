@@ -2,7 +2,9 @@
 
 Offline tool for printing numbered radio voice authentication cards.
 
-Open `voice-auth.html` in Chrome, Edge or Firefox. It runs entirely in the browser with no network access. The page blocks all outside connections, and nothing is saved when it closes.
+**Use it online:** https://jdlee77.github.io/Voice-Auth/. To use it offline, save the page from your browser, or download `voice-auth.html` from this repository.
+
+Open it in Chrome, Edge or Firefox. It runs entirely in the browser with no network access. The page blocks all outside connections, and nothing is saved when it closes.
 
 ## What a card contains
 
@@ -29,6 +31,6 @@ Open `voice-auth.html` in Chrome, Edge or Firefox. It runs entirely in the brows
 The page is built from `src/`:
 
 ```
-python3 build.py      # writes voice-auth.html
+python3 build.py      # writes voice-auth.html and index.html
 node tests/test.js    # crypto and test-vector checks
 ```
