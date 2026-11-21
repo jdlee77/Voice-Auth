@@ -10,7 +10,8 @@
   function setKey(bytes, version, created) {
     S.key = bytes; S.secret = VA.b32encode(bytes); S.version = version; S.created = created;
     $('secretBox').hidden = true; $('btnShow').textContent = 'Show secret';
-    ['btnExport', 'btnRotate', 'btnShow', 'btnBuild'].forEach((b) => ($(b).disabled = false));
+    ['btnExport', 'btnRotate', 'btnShow', 'btnBuild', 'btnEnroll'].forEach((b) => ($(b).disabled = false));
+    $('enrollOut').innerHTML = '';
     renderKeyInfo(); clearCards(); refreshConsole();
   }
   function renderKeyInfo() {
@@ -108,6 +109,25 @@
     $('cardsNote').textContent = `Card${count > 1 ? 's' : ''} ${from}${count > 1 ? '–' + (from + count - 1) : ''} built for key v${S.version} (FP ${fp}). One page per card.`;
   };
   $('btnPrint').onclick = () => window.print();
+
+  // ---------- phone enrollment ----------
+  $('btnEnroll').onclick = async () => {
+    const p1 = $('encPass').value, p2 = $('encPass2').value, out = $('enrollOut');
+    if (p1.length < 12) { out.innerHTML = '<div class="result bad">Use a passphrase of at least 12 characters.</div>'; return; }
+    if (p1 !== p2) { out.innerHTML = '<div class="result bad">The passphrases don\'t match.</div>'; return; }
+    $('btnEnroll').disabled = true; out.innerHTML = '<div class="note">Encrypting…</div>';
+    try {
+      const code = await Vault.seal({ s: S.secret, f: VA.fingerprint(S.key), v: S.version, n: $('incName').value || '' }, p1);
+      const q = qrcode(0, 'M'); q.addData(code); q.make();
+      out.innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true }) +
+        `<div class="note">Key v${S.version} · fingerprint <b class="mono">${VA.fingerprint(S.key)}</b>. On the phone, open <b>/card/</b> on this site and scan this code.</div>
+         <label>Or copy the enrollment code (still needs the passphrase)</label><textarea readonly id="enrollCode">${esc(code)}</textarea>
+         <button id="btnHideEnroll">Hide QR</button>`;
+      $('btnHideEnroll').onclick = () => { out.innerHTML = ''; };
+      $('encPass').value = $('encPass2').value = '';
+    } catch (e) { out.innerHTML = `<div class="result bad">${esc(e.message)}</div>`; }
+    $('btnEnroll').disabled = false;
+  };
 
   // ---------- card console ----------
   function refreshConsole() {

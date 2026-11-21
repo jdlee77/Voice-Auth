@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src blob: mediastream:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<title>Voice Auth · Card</title>
+<style>
+  :root { --ink:#16202a; --mute:#5b6773; --line:#d5dbe1; --bg:#f4f6f8; --ok:#1d7a3e; --bad:#b3261e; --acc:#b8461b; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { margin:0; background:var(--bg); color:var(--ink); font:17px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  header { background:var(--ink); color:#fff; padding:12px 16px calc(12px) 16px; padding-top:max(12px, env(safe-area-inset-top)); display:flex; align-items:center; gap:10px; }
+  header h1 { font-size:17px; margin:0; flex:1; }
+  header button { width:auto; flex:none; background:transparent; color:#fff; border:1px solid #fff8; margin:0; padding:6px 12px; font-size:14px; }
+  main { max-width:480px; margin:0 auto; padding:16px; padding-bottom:max(24px, env(safe-area-inset-bottom)); }
+  .screen { display:none; } .screen.on { display:block; }
+  .box { background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--mute); margin:0 0 10px; }
+  p { margin:0 0 10px; }
+  label { display:block; font-size:13px; color:var(--mute); margin:12px 0 4px; }
+  input, textarea { width:100%; font:inherit; padding:12px; border:1px solid var(--line); border-radius:8px; background:#fff; }
+  textarea { font:13px ui-monospace,Menlo,Consolas,monospace; height:80px; }
+  button { font:inherit; font-weight:600; width:100%; padding:13px; border-radius:10px; border:1px solid var(--ink); background:#fff; color:var(--ink); margin-top:10px; }
+  button.primary { background:var(--ink); color:#fff; }
+  button.link { border:0; background:none; color:var(--mute); font-weight:400; text-decoration:underline; font-size:14px; }
+  .msg { min-height:1.4em; margin-top:10px; font-weight:600; } .msg.ok { color:var(--ok); } .msg.bad { color:var(--bad); }
+  .note { font-size:14px; color:var(--mute); }
+  video { width:100%; border-radius:10px; background:#000; margin-top:10px; display:none; }
+  .stepper { display:flex; align-items:center; gap:10px; }
+  .stepper button { width:56px; height:56px; margin:0; font-size:26px; padding:0; flex:none; }
+  .stepper .val { flex:1; text-align:center; }
+  .stepper .val b { display:block; font-size:40px; line-height:1.05; }
+  .stepper .val span { font-size:12px; color:var(--mute); text-transform:uppercase; letter-spacing:.08em; }
+  .code { text-align:center; padding:6px 0 2px; }
+  .code .big { font:800 64px/1 ui-monospace,Menlo,Consolas,monospace; letter-spacing:.08em; }
+  .code .ph { font-size:18px; font-weight:700; letter-spacing:.06em; margin-top:6px; }
+  .resp { text-align:center; margin-top:12px; }
+  .resp .big { font:800 48px/1 ui-monospace,Menlo,Consolas,monospace; letter-spacing:.08em; }
+  .chin { font:700 28px ui-monospace,Menlo,Consolas,monospace; text-align:center; text-transform:uppercase; letter-spacing:.2em; }
+  .pin { font-size:28px; text-align:center; letter-spacing:.4em; }
+  .meta { font-size:13px; color:var(--mute); text-align:center; }
+  .today { width:auto; padding:6px 14px; font-size:14px; margin:8px auto 0; display:block; }
+</style>
+</head>
+<body>
+<header><h1>Voice Auth · Card</h1><button id="btnLock" hidden>Lock</button></header>
+<main>
+
+<!-- 1. Enroll -->
+<section class="screen" id="scrEnroll">
+  <div class="box">
+    <h2>Set up this phone</h2>
+    <p>Get the <b>enrollment QR code</b> and <b>passphrase</b> from your key custodian.</p>
+    <button class="primary" id="btnScan">Scan QR code with camera</button>
+    <video id="video" playsinline muted></video>
+    <button id="btnPhoto">Use a photo of the QR code</button>
+    <input type="file" id="photoIn" accept="image/*" hidden>
+    <label>Or paste the enrollment code</label>
+    <textarea id="codeIn" placeholder="VAUTH1.…" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+    <label>Passphrase from the custodian</label>
+    <input type="password" id="passIn" autocomplete="off">
+    <button class="primary" id="btnOpen">Continue</button>
+    <div class="msg" id="enrollMsg"></div>
+  </div>
+  <p class="note">The key stays on this phone, locked with a PIN you choose next. Nothing is sent anywhere: this page has no network access after it loads.</p>
+</section>
+
+<!-- 2. Choose PIN -->
+<section class="screen" id="scrPin">
+  <div class="box">
+    <h2>Choose a PIN</h2>
+    <p id="pinKeyInfo" class="note"></p>
+    <label>PIN (6 to 12 digits)</label>
+    <input type="password" id="pin1" class="pin" inputmode="numeric" autocomplete="off" maxlength="12">
+    <label>Enter it again</label>
+    <input type="password" id="pin2" class="pin" inputmode="numeric" autocomplete="off" maxlength="12">
+    <button class="primary" id="btnSavePin">Save</button>
+    <div class="msg" id="pinMsg"></div>
+  </div>
+  <p class="note">5 wrong PINs in a row erase the key from this phone. You would then need to enroll again.</p>
+</section>
+
+<!-- 3. Unlock -->
+<section class="screen" id="scrUnlock">
+  <div class="box">
+    <h2>Unlock</h2>
+    <p id="unlockInfo" class="note"></p>
+    <input type="password" id="pinIn" class="pin" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="PIN">
+    <button class="primary" id="btnUnlock">Unlock</button>
+    <div class="msg" id="unlockMsg"></div>
+  </div>
+  <button class="link" id="btnForget">Erase the key from this phone</button>
+</section>
+
+<!-- 4. Card -->
+<section class="screen" id="scrCard">
+  <div class="box">
+    <div class="stepper">
+      <button id="cardDn" aria-label="Previous card">−</button>
+      <div class="val"><span>Card in effect</span><b id="cardNo">1</b></div>
+      <button id="cardUp" aria-label="Next card">+</button>
+    </div>
+    <p class="meta" style="margin-top:6px">Use only the card announced by the key custodian.</p>
+  </div>
+  <div class="box">
+    <div class="stepper">
+      <button id="dayDn" aria-label="Previous day">−</button>
+      <div class="val"><span>Day of month</span><b id="dayNo">1</b></div>
+      <button id="dayUp" aria-label="Next day">+</button>
+    </div>
+    <button class="today" id="dayToday">Today</button>
+    <div class="code"><h2 style="margin-top:12px">Daily order code</h2><div class="big" id="dailyCode">——</div><div class="ph" id="dailyPh"></div></div>
+  </div>
+  <div class="box">
+    <h2>Challenge → response</h2>
+    <input id="chIn" class="chin" maxlength="3" placeholder="A3C" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <div class="resp"><div class="big" id="respCode"></div><div class="ph" id="respPh"></div></div>
+    <div class="msg" id="chMsg"></div>
+  </div>
+  <p class="meta" id="keyMeta"></p>
+  <p class="meta">Locks automatically after 2 minutes, or when you leave this page.</p>
+</section>
+
+</main>
+<script>/*JSQR*/</script>
+<script>/*CORE*/</script>
+<script>/*VAULT*/</script>
+<script>/*CARDAPP*/</script>
+</body>
+</html>

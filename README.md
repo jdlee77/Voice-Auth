@@ -12,6 +12,20 @@ Open it in Chrome, Edge or Firefox. It runs entirely in the browser with no netw
 - **Daily order codes.** 31 two-letter codes, one for each day of the month. The sender says "Auth SIERRA HOTEL" and the receiver checks it against today's code.
 - **Challenge / response.** Letter-number-letter pairs (e.g. challenge A3C → response I7J). Each line is struck after one use.
 
+## Phone card (no app to install)
+
+Phones can show the same cards using the web page at **https://jdlee77.github.io/Voice-Auth/card/**. It's a regular web page: nothing to install.
+
+1. **Create an enrollment QR code.** The custodian goes to section 3 of the tool and sets a passphrase. The QR code holds the key, encrypted with that passphrase (AES-256-GCM, PBKDF2-SHA256 with 310,000 iterations).
+2. **Enroll the phone.** The user opens `/card/`, scans the QR code (or uses a photo of it, or pastes the code) and enters the passphrase. Give the QR code and passphrase separately.
+3. **Choose a PIN.** The user picks a 6–12 digit PIN. The key is stored on the phone, encrypted with the PIN and with a device key that page scripts can't read out. 5 wrong PINs erase it.
+4. **Use the card.** It shows the card in effect, today's daily code, and the response to **any** challenge. The page locks after 2 minutes idle or when you leave it.
+
+Limits:
+- The page needs a connection to open. Once open, it works without signal.
+- iPhone Safari may clear the stored key after about 7 days without a visit, so re-enroll if that happens.
+- Browser storage is weaker than a native app's secure storage, so treat a lost phone like a lost card: the custodian switches cards or rotates the key.
+
 ## Using the tool
 
 1. **Generate a key.** Then export the key file and keep it under the custodian's control. Without it, cards can't be reprinted.
@@ -26,11 +40,16 @@ Open it in Chrome, Edge or Firefox. It runs entirely in the browser with no netw
 - Switch cards at least monthly, because daily codes repeat each month on the same card.
 - The printed cards and the key file are controlled items. Never commit a key file to this repository.
 
+## Third-party code
+
+- `src/vendor/qrcode-generator.js`: QR code generation (MIT, Kazuhiko Arase)
+- `src/vendor/jsQR.js`: QR code scanning (Apache-2.0, see `src/vendor/jsQR.LICENSE`)
+
 ## Development
 
 The page is built from `src/`:
 
 ```
-python3 build.py      # writes voice-auth.html and index.html
+python3 build.py      # writes voice-auth.html, index.html and card/index.html
 node tests/test.js    # crypto and test-vector checks
 ```
