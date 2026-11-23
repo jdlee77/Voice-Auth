@@ -25,7 +25,7 @@ Then:
 
 1. **Create an enrollment QR code.** The custodian goes to section 3 of the tool and sets a passphrase. The QR code holds the key, encrypted with that passphrase (AES-256-GCM, PBKDF2-SHA256 with 310,000 iterations).
 2. **Enroll the phone.** The user opens `/card/`, scans the QR code (or uses a photo of it, or pastes the code) and enters the passphrase. Give the QR code and passphrase separately.
-3. **Choose a PIN.** The user picks a 6–12 digit PIN. The key is stored on the phone, encrypted with the PIN and with a device key that page scripts can't read out. 5 wrong PINs erase it.
+3. **Choose a PIN.** The user picks a 6–12 digit PIN. The key is stored on the phone, encrypted with the PIN and with a device wrapping key that page scripts can't read out. 5 wrong PINs in a row erase it.
 4. **Use the card.** It shows the card in effect, today's daily code, and the response to **any** challenge. The page locks after 2 minutes idle or when you leave it.
 
 Limits:
@@ -60,4 +60,5 @@ The page is built from `src/`:
 ```
 python3 build.py      # writes voice-auth.html, index.html and card/ (page, manifest, icons, service worker)
 node tests/test.js    # crypto and test-vector checks
+node tests/devicekey.test.js   # device key: PIN unlock, 5-wrong-PIN erase, stored format
 ```

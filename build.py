@@ -13,7 +13,8 @@ for name in ('voice-auth.html', 'index.html'):
     (root / name).write_text(tool)
 
 card = (src('card.html').replace('/*JSQR*/', src('vendor/jsQR.js'))
-        .replace('/*CORE*/', src('core.js')).replace('/*VAULT*/', src('vault.js')).replace('/*CARDAPP*/', src('card.js')))
+        .replace('/*CORE*/', src('core.js')).replace('/*VAULT*/', src('vault.js'))
+        .replace('/*DEVICEKEY*/', src('devicekey.js')).replace('/*CARDAPP*/', src('card.js')))
 (root / 'card').mkdir(exist_ok=True)
 (root / 'card/index.html').write_text(card)
 
