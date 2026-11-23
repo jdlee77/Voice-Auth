@@ -8,12 +8,12 @@ root = Path(__file__).parent
 src = lambda p: (root / 'src' / p).read_text()
 
 tool = (src('template.html').replace('/*QRLIB*/', src('vendor/qrcode-generator.js'))
-        .replace('/*CORE*/', src('core.js')).replace('/*VAULT*/', src('vault.js')).replace('/*APP*/', src('app.js')))
+        .replace('/*CORE*/', src('core.js')).replace('/*ENROLLMENTCODE*/', src('enrollmentcode.js')).replace('/*APP*/', src('app.js')))
 for name in ('voice-auth.html', 'index.html'):
     (root / name).write_text(tool)
 
 card = (src('card.html').replace('/*JSQR*/', src('vendor/jsQR.js'))
-        .replace('/*CORE*/', src('core.js')).replace('/*VAULT*/', src('vault.js'))
+        .replace('/*CORE*/', src('core.js')).replace('/*ENROLLMENTCODE*/', src('enrollmentcode.js'))
         .replace('/*DEVICEKEY*/', src('devicekey.js')).replace('/*CARDAPP*/', src('card.js')))
 (root / 'card').mkdir(exist_ok=True)
 (root / 'card/index.html').write_text(card)

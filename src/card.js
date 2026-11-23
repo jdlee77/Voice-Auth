@@ -34,7 +34,7 @@
     const c = document.createElement('canvas'); c.width = cw; c.height = ch;
     const ctx = c.getContext('2d', { willReadFrequently: true }); ctx.drawImage(source, 0, 0, cw, ch);
     const qr = jsQR(ctx.getImageData(0, 0, cw, ch).data, cw, ch, { inversionAttempts: 'attemptBoth' });
-    return qr && qr.data.startsWith('VAUTH1.') ? qr.data : null;
+    return qr && EnrollmentCode.looks(qr.data) ? qr.data : null;
   }
   function gotCode(code) {
     stopCamera(); $('codeIn').value = code;
@@ -72,13 +72,16 @@
     if (!pass) return msg('enrollMsg', 'Enter the passphrase from the custodian.', 'bad');
     msg('enrollMsg', 'Checking…'); $('btnOpen').disabled = true;
     try {
-      const p = await Vault.open(code, pass);
-      const bytes = VA.b32decode(p.s);
-      if (bytes.length < 16 || VA.fingerprint(bytes) !== p.f) throw new Error('The code is damaged.');
-      pending = { bytes, meta: { f: p.f, v: p.v, n: p.n || '' } };
-      $('passIn').value = ''; $('codeIn').value = ''; msg('enrollMsg', '');
-      $('pinKeyInfo').textContent = metaText(pending.meta) + '. Confirm this fingerprint with your custodian.';
-      show('scrPin'); $('pin1').focus();
+      const r = await EnrollmentCode.open(code, pass);
+      if (r.status === 'not-a-code') msg('enrollMsg', 'That is not a Voice Auth enrollment code.', 'bad');
+      else if (r.status === 'wrong-passphrase') msg('enrollMsg', 'Wrong passphrase, or the code is damaged.', 'bad');
+      else if (r.status === 'damaged') msg('enrollMsg', 'The code is damaged.', 'bad');
+      else {
+        pending = { bytes: r.key, meta: { f: r.fingerprint, v: r.version, n: r.incident } };   // stored with the device key
+        $('passIn').value = ''; $('codeIn').value = ''; msg('enrollMsg', '');
+        $('pinKeyInfo').textContent = metaText(pending.meta) + '. Confirm this fingerprint with your custodian.';
+        show('scrPin'); $('pin1').focus();
+      }
     } catch (e) { msg('enrollMsg', e.message, 'bad'); }
     $('btnOpen').disabled = false;
   };

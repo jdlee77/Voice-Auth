@@ -1,6 +1,6 @@
 // Voice Auth Card service worker: keeps the page on the phone so it opens with no signal.
 // Cache-first. The build stamps a new version whenever the page changes, which replaces the cache.
-const CACHE = 'voiceauth-card-ba32f59dc61c';
+const CACHE = 'voiceauth-card-35f590400b7e';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png'];
 
 self.addEventListener('install', (e) => {

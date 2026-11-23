@@ -113,11 +113,12 @@
   // ---------- phone enrollment ----------
   $('btnEnroll').onclick = async () => {
     const p1 = $('encPass').value, p2 = $('encPass2').value, out = $('enrollOut');
-    if (p1.length < 12) { out.innerHTML = '<div class="result bad">Use a passphrase of at least 12 characters.</div>'; return; }
     if (p1 !== p2) { out.innerHTML = '<div class="result bad">The passphrases don\'t match.</div>'; return; }
     $('btnEnroll').disabled = true; out.innerHTML = '<div class="note">Encrypting…</div>';
     try {
-      const code = await Vault.seal({ s: S.secret, f: VA.fingerprint(S.key), v: S.version, n: $('incName').value || '' }, p1);
+      const r = await EnrollmentCode.seal(S.key, { version: S.version, incident: $('incName').value || '' }, p1);
+      if (r.status === 'passphrase-too-short') { out.innerHTML = '<div class="result bad">Use a passphrase of at least 12 characters.</div>'; $('btnEnroll').disabled = false; return; }
+      const code = r.code;
       const q = qrcode(0, 'M'); q.addData(code); q.make();
       out.innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true }) +
         `<div class="note">Key v${S.version} · fingerprint <b class="mono">${VA.fingerprint(S.key)}</b>. On the phone, open <b>/card/</b> on this site and scan this code.</div>

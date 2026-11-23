@@ -10395,43 +10395,63 @@ const VA = (() => {
 })();
 if (typeof module !== 'undefined') module.exports = VA;
 </script>
-<script>// ===== Voice Auth vault: enrollment codes (passphrase encryption) using the browser's built-in WebCrypto =====
-// Enrollment code format:  VAUTH1.<salt>.<iterations>.<iv>.<ciphertext>   (base64url parts)
-// Encryption: AES-256-GCM, key from PBKDF2-SHA256(passphrase, salt, iterations).
-const Vault = (() => {
+<script>// ===== Voice Auth enrollment code: a key sealed with a passphrase, to carry it from the custodian to a phone =====
+// Format:  VAUTH1.<salt>.<iterations>.<iv>.<ciphertext>   (base64url parts)
+// Encryption: AES-256-GCM, key from PBKDF2-SHA256(passphrase, salt, iterations). Inside: {"s": Base32 key,
+// "f": fingerprint, "v": key version, "n": incident}. This format is fixed: codes already handed out must keep opening.
+//
+//   seal(key, { version, incident }, passphrase) -> { status: 'sealed', code } | { status: 'passphrase-too-short' }
+//   open(code, passphrase) -> { status: 'open', key, fingerprint, version, incident }
+//                           | { status: 'not-a-code' } | { status: 'wrong-passphrase' } | { status: 'damaged' }
+//   looks(text) -> true if text has the shape of an enrollment code (for the QR scanner)
+const EnrollmentCode = (() => {
+  const core = typeof VA !== 'undefined' ? VA : require('./core.js');
   const te = new TextEncoder(), td = new TextDecoder();
+  const ITER = 310000, MIN_ITER = 100000, MAX_ITER = 2000000, MIN_PASSPHRASE = 12, MIN_KEY_BYTES = 16;
+  const SHAPE = /^VAUTH1\.[A-Za-z0-9_-]+\.\d+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
   const b64u = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const unb64u = (s) => { s = s.replace(/-/g, '+').replace(/_/g, '/'); s += '='.repeat((4 - (s.length % 4)) % 4);
     return Uint8Array.from(atob(s), (c) => c.charCodeAt(0)); };
   const rand = (n) => crypto.getRandomValues(new Uint8Array(n));
-  const ITER = 310000;
 
   async function deriveKey(pass, salt, iter) {
     const base = await crypto.subtle.importKey('raw', te.encode(pass), 'PBKDF2', false, ['deriveKey']);
     return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' },
       base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
   }
-  const enc = async (key, iv, data) => new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data));
-  const dec = async (key, iv, data) => new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data));
 
-  // Enrollment code: protects the key while it travels from custodian to phone
-  async function seal(obj, pass, iter = ITER) {
+  const looks = (text) => typeof text === 'string' && SHAPE.test(text.trim());
+
+  async function seal(key, { version, incident = '' }, passphrase) {
+    if (String(passphrase).length < MIN_PASSPHRASE) return { status: 'passphrase-too-short' };
+    const payload = { s: core.b32encode(key), f: core.fingerprint(key), v: version, n: incident };
     const salt = rand(16), iv = rand(12);
-    const ct = await enc(await deriveKey(pass, salt, iter), iv, te.encode(JSON.stringify(obj)));
-    return ['VAUTH1', b64u(salt), iter, b64u(iv), b64u(ct)].join('.');
-  }
-  async function open(code, pass) {
-    const p = String(code).trim().split('.');
-    if (p.length !== 5 || p[0] !== 'VAUTH1') throw new Error('That is not a Voice Auth enrollment code.');
-    try {
-      const pt = await dec(await deriveKey(pass, unb64u(p[1]), +p[2]), unb64u(p[3]), unb64u(p[4]));
-      return JSON.parse(td.decode(pt));
-    } catch (e) { throw new Error('Wrong passphrase, or the code is damaged.'); }
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv },
+      await deriveKey(passphrase, salt, ITER), te.encode(JSON.stringify(payload))));
+    return { status: 'sealed', code: ['VAUTH1', b64u(salt), ITER, b64u(iv), b64u(ct)].join('.') };
   }
 
-  return { seal, open };
+  async function open(code, passphrase) {
+    code = String(code).trim();
+    if (!looks(code)) return { status: 'not-a-code' };
+    const p = code.split('.'), iter = Number(p[2]);
+    if (!(iter >= MIN_ITER && iter <= MAX_ITER)) return { status: 'not-a-code' };   // refused before any slow work
+    let salt, iv, ct;
+    try { salt = unb64u(p[1]); iv = unb64u(p[3]); ct = unb64u(p[4]); } catch (e) { return { status: 'not-a-code' }; }
+    if (salt.length !== 16 || iv.length !== 12) return { status: 'not-a-code' };
+    let plain;
+    try { plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, await deriveKey(passphrase, salt, iter), ct); }
+    catch (e) { return { status: 'wrong-passphrase' }; }   // also a code changed in transit: AES-GCM can't tell them apart
+    try {
+      const d = JSON.parse(td.decode(plain)), key = core.b32decode(d.s);
+      if (key.length < MIN_KEY_BYTES || core.fingerprint(key) !== d.f) return { status: 'damaged' };
+      return { status: 'open', key, fingerprint: d.f, version: d.v, incident: d.n || '' };
+    } catch (e) { return { status: 'damaged' }; }
+  }
+
+  return { seal, open, looks };
 })();
-if (typeof module !== 'undefined') module.exports = Vault;
+if (typeof module !== 'undefined') module.exports = EnrollmentCode;
 </script>
 <script>// ===== Voice Auth device key: the enrolled key as stored on one phone =====
 // The key is locked twice: with a key derived from the user's PIN (PBKDF2-SHA256, AES-256-GCM), and with a
@@ -10537,7 +10557,7 @@ if (typeof module !== 'undefined') module.exports = DeviceKey;
     const c = document.createElement('canvas'); c.width = cw; c.height = ch;
     const ctx = c.getContext('2d', { willReadFrequently: true }); ctx.drawImage(source, 0, 0, cw, ch);
     const qr = jsQR(ctx.getImageData(0, 0, cw, ch).data, cw, ch, { inversionAttempts: 'attemptBoth' });
-    return qr && qr.data.startsWith('VAUTH1.') ? qr.data : null;
+    return qr && EnrollmentCode.looks(qr.data) ? qr.data : null;
   }
   function gotCode(code) {
     stopCamera(); $('codeIn').value = code;
@@ -10575,13 +10595,16 @@ if (typeof module !== 'undefined') module.exports = DeviceKey;
     if (!pass) return msg('enrollMsg', 'Enter the passphrase from the custodian.', 'bad');
     msg('enrollMsg', 'Checking…'); $('btnOpen').disabled = true;
     try {
-      const p = await Vault.open(code, pass);
-      const bytes = VA.b32decode(p.s);
-      if (bytes.length < 16 || VA.fingerprint(bytes) !== p.f) throw new Error('The code is damaged.');
-      pending = { bytes, meta: { f: p.f, v: p.v, n: p.n || '' } };
-      $('passIn').value = ''; $('codeIn').value = ''; msg('enrollMsg', '');
-      $('pinKeyInfo').textContent = metaText(pending.meta) + '. Confirm this fingerprint with your custodian.';
-      show('scrPin'); $('pin1').focus();
+      const r = await EnrollmentCode.open(code, pass);
+      if (r.status === 'not-a-code') msg('enrollMsg', 'That is not a Voice Auth enrollment code.', 'bad');
+      else if (r.status === 'wrong-passphrase') msg('enrollMsg', 'Wrong passphrase, or the code is damaged.', 'bad');
+      else if (r.status === 'damaged') msg('enrollMsg', 'The code is damaged.', 'bad');
+      else {
+        pending = { bytes: r.key, meta: { f: r.fingerprint, v: r.version, n: r.incident } };   // stored with the device key
+        $('passIn').value = ''; $('codeIn').value = ''; msg('enrollMsg', '');
+        $('pinKeyInfo').textContent = metaText(pending.meta) + '. Confirm this fingerprint with your custodian.';
+        show('scrPin'); $('pin1').focus();
+      }
     } catch (e) { msg('enrollMsg', e.message, 'bad'); }
     $('btnOpen').disabled = false;
   };

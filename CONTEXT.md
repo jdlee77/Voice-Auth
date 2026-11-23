@@ -22,6 +22,10 @@ One numbered set of daily codes and challenge/response pairs, all derived from t
 A key sealed with a passphrase so it can travel from the custodian to a phone, shown as a QR code.
 _Avoid_: enrollment QR (the QR is just how it is displayed)
 
+**Passphrase**:
+The secret of at least 12 characters the custodian sets to seal an enrollment code, given to the user separately from the code.
+_Avoid_: password, PIN
+
 **Device key**:
 The key as stored on one enrolled phone, locked by the user's PIN and erased after 5 wrong PINs in a row.
 _Avoid_: stored key, phone vault

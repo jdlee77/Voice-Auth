@@ -61,4 +61,5 @@ The page is built from `src/`:
 python3 build.py      # writes voice-auth.html, index.html and card/ (page, manifest, icons, service worker)
 node tests/test.js    # crypto and test-vector checks
 node tests/devicekey.test.js   # device key: PIN unlock, 5-wrong-PIN erase, stored format
+node tests/enrollmentcode.test.js   # enrollment code: seal/open, failure cases, codes already handed out
 ```
