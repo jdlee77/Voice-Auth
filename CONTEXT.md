@@ -26,11 +26,15 @@ A letter-digit-letter group (such as A3C) one station sends to make the other pr
 **Response**:
 The letter-digit-letter group a card gives for a challenge; each printed challenge is struck after one use.
 
-### Phone card
+### Enrollment
 
 **Enrollment code**:
-A key sealed with a passphrase so it can travel from the custodian to a phone, shown as a QR code.
+A key sealed with a passphrase so it can travel from the custodian to a phone or a far end, shown as a QR code.
 _Avoid_: enrollment QR (the QR is just how it is displayed)
+
+**Far end**:
+A station away from the custodian that prints its own cards from an enrollment code.
+_Avoid_: remote site, field station
 
 **Passphrase**:
 The secret of at least 12 characters the custodian sets to seal an enrollment code, given to the user separately from the code.
