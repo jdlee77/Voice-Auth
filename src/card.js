@@ -143,7 +143,7 @@
   function render() {
     if (!secret) return;
     $('cardNo').textContent = cardNo; $('dayNo').textContent = day;
-    const code = VA.orderLines(secret, cardNo, 31)[day - 1];
+    const code = VA.card(secret, cardNo).dailyCode(day);
     $('dailyCode').textContent = code; $('dailyPh').textContent = VA.phon(code);
     respond();
   }
@@ -157,9 +157,9 @@
     const v = $('chIn').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); $('chIn').value = v;
     $('respCode').textContent = ''; $('respPh').textContent = ''; msg('chMsg', '');
     if (!secret || v.length < 3) return;
-    if (!/^[A-Z][0-9][A-Z]$/.test(v)) return msg('chMsg', 'Format is letter-number-letter, e.g. A3C', 'bad');
-    const r = VA.crResponse(secret, VA.cardLabel(cardNo), v);
-    $('respCode').textContent = r; $('respPh').textContent = VA.phon(r);
+    const r = VA.card(secret, cardNo).respond(v);
+    if (r.status === 'bad-format') return msg('chMsg', 'Format is letter-number-letter, e.g. A3C', 'bad');
+    $('respCode').textContent = r.response; $('respPh').textContent = VA.phon(r.response);
   }
   $('chIn').addEventListener('input', respond);
 
