@@ -39,7 +39,7 @@ Limits:
 ## Using the tool
 
 1. **Generate a key.** Then export the key file and keep it under the custodian's control. Without it, cards can't be reprinted.
-2. **Choose and print.** Pick the cards to print, then print or save them as PDF. You get one page per card.
+2. **Choose and print.** Pick the cards to print, then print or save them as PDF. You get one page per card, or choose **Card size: Badge** for credit-card-size cards (85.6 × 54 mm) to carry with an ID badge: four to a page, daily codes on the front and challenge/response on the back. Print at 100% scale (Actual size), cut on the solid outline and fold on the dashed line. Badge cards hold up to 32 challenges and leave out the phonetics.
 3. **Use the card console.** It looks up or checks a daily code for any card and day, and answers challenges.
 4. **Rotate the key if a set of cards is lost.**
 
