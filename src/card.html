@@ -62,6 +62,15 @@
   <button class="primary" id="btnInstall" hidden>Install app</button>
 </div>
 
+<!-- 0. Self-test failed: nothing else is shown -->
+<section class="screen" id="scrBroken">
+  <div class="box">
+    <h2>Self-test failed</h2>
+    <p class="msg bad">Do not use this copy. It does not compute the right codes.</p>
+    <p>Failed checks: <span id="brokenChecks"></span></p>
+  </div>
+</section>
+
 <!-- 1. Enroll -->
 <section class="screen" id="scrEnroll">
   <div class="box">
@@ -140,7 +149,7 @@
 </main>
 <script>/*JSQR*/</script>
 <script>/*CORE*/</script>
-<script>/*VAULT*/</script>
+<script>/*ENROLLMENTCODE*/</script>
 <script>/*DEVICEKEY*/</script>
 <script>/*CARDAPP*/</script>
 </body>

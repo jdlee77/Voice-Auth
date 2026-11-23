@@ -83,13 +83,13 @@
     const inc = esc($('incName').value || '—'), incNo = esc($('incNo').value || '—'), cust = esc($('custodian').value || '—');
     const fp = VA.fingerprint(S.key); let html = '';
     for (let cardNo = from; cardNo < from + count; cardNo++) {
-      const label = VA.cardLabel(cardNo);
-      const days = VA.orderLines(S.key, cardNo, 31);
+      const card = VA.card(S.key, cardNo);
+      const days = card.dailyCodes();
       const codes = days.map((oc, i) =>
         `<div><span class="ln">Day ${pad2(i + 1)}</span><b>${oc}</b><i>${VA.phon(oc)}</i></div>`).join('');
-      const ch = VA.crChallenges(S.key, label, nCh), half = Math.ceil(ch.length / 2);
+      const ch = card.challenges(nCh), half = Math.ceil(ch.length / 2);
       const tbl = (list) => `<table><tr><th></th><th>Challenge</th><th>Response</th></tr>${list.map((x) => {
-        const r = VA.crResponse(S.key, label, x);
+        const r = card.respond(x).response;
         return `<tr><td class="box">☐</td><td><b>${x}</b> <span>${VA.phon(x)}</span></td><td><b>${r}</b> <span>${VA.phon(r)}</span></td></tr>`; }).join('')}</table>`;
       html += `<div class="card">
         <div class="banner">CONTROLLED · VOICE AUTHENTICATION CARD</div>
@@ -113,11 +113,12 @@
   // ---------- phone enrollment ----------
   $('btnEnroll').onclick = async () => {
     const p1 = $('encPass').value, p2 = $('encPass2').value, out = $('enrollOut');
-    if (p1.length < 12) { out.innerHTML = '<div class="result bad">Use a passphrase of at least 12 characters.</div>'; return; }
     if (p1 !== p2) { out.innerHTML = '<div class="result bad">The passphrases don\'t match.</div>'; return; }
     $('btnEnroll').disabled = true; out.innerHTML = '<div class="note">Encrypting…</div>';
     try {
-      const code = await Vault.seal({ s: S.secret, f: VA.fingerprint(S.key), v: S.version, n: $('incName').value || '' }, p1);
+      const r = await EnrollmentCode.seal(S.key, { version: S.version, incident: $('incName').value || '' }, p1);
+      if (r.status === 'passphrase-too-short') { out.innerHTML = '<div class="result bad">Use a passphrase of at least 12 characters.</div>'; $('btnEnroll').disabled = false; return; }
+      const code = r.code;
       const q = qrcode(0, 'M'); q.addData(code); q.make();
       out.innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true }) +
         `<div class="note">Key v${S.version} · fingerprint <b class="mono">${VA.fingerprint(S.key)}</b>. On the phone, open <b>/card/</b> on this site and scan this code.</div>
@@ -141,7 +142,7 @@
     $('chkCode').value = code;
     if (!S.key || !day) { el.textContent = ''; el.className = 'result'; return; }
     if (day < 1 || day > 31) { el.className = 'result bad'; el.textContent = 'Day must be 1–31.'; return; }
-    const no = intIn('conCard', 1, 9999), exp = VA.orderLines(S.key, no, 31)[day - 1];
+    const no = intIn('conCard', 1, 9999), exp = VA.card(S.key, no).dailyCode(day);
     if (code.length < 2) { el.className = 'result'; el.textContent = `Card ${no}, day ${pad2(day)} = ${exp} (${VA.phon(exp)})`; return; }
     el.className = 'result ' + (code === exp ? 'ok' : 'bad');
     el.textContent = code === exp ? `✔ VALID: Card ${no}, day ${pad2(day)}`
@@ -152,8 +153,9 @@
     const v = $('chkCh').value.toUpperCase().replace(/[^A-Z0-9]/g, ''), el = $('chkChRes');
     $('chkCh').value = v;
     if (!S.key || v.length < 3) { el.textContent = ''; el.className = 'result'; return; }
-    if (!/^[A-Z][0-9][A-Z]$/.test(v)) { el.className = 'result bad'; el.textContent = 'Format is letter-number-letter, e.g. A3C'; return; }
-    const no = intIn('conCard', 1, 9999), r = VA.crResponse(S.key, VA.cardLabel(no), v);
+    const no = intIn('conCard', 1, 9999), res = VA.card(S.key, no).respond(v);
+    if (res.status === 'bad-format') { el.className = 'result bad'; el.textContent = 'Format is letter-number-letter, e.g. A3C'; return; }
+    const r = res.response;
     el.className = 'result ok'; el.textContent = `Card ${no}: ${VA.phon(v)} → respond ${r} (${VA.phon(r)})`;
   });
   $('chkLine').value = new Date().getDate();
@@ -161,14 +163,9 @@
 
   // ---------- self-test ----------
   (() => {
-    const k = VA.enc('12345678901234567890');
-    const h = (key, m) => VA.hex(VA.hmac(VA.sha256, key, VA.enc(m))).toLowerCase();
-    const ok = h(VA.enc('Jefe'), 'what do ya want for nothing?') === '5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843'
-      && h(new Uint8Array(20).fill(11), 'Hi There') === 'b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7'
-      && VA.orderLines(k, 1, 3).join(',') === 'RZ,YB,WT'
-      && VA.crChallenges(k, VA.cardLabel(1), 3).join(',') === 'A6A,W2F,X8O'
-      && VA.crResponse(k, VA.cardLabel(1), 'A3C') === 'I7J' && VA.fingerprint(k) === '6ED6';
+    const { ok, failed } = VA.selfTest();
     const el = $('selftest'); el.className = 'result ' + (ok ? 'ok' : 'bad');
-    el.textContent = ok ? '✔ Self-test passed: RFC 4231 HMAC-SHA256 vectors and Voice Auth test vectors match.' : '✘ SELF-TEST FAILED. Do not use this copy.';
+    el.textContent = ok ? '✔ Self-test passed: SHA-256, RFC 4231 HMAC-SHA256, Base32 and Voice Auth test vectors match.'
+      : '✘ SELF-TEST FAILED. Do not use this copy. Failed: ' + failed.join(', ');
   })();
 })();

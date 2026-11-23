@@ -16,11 +16,25 @@ A short code derived from a key, read aloud so everyone can confirm they hold th
 **Card**:
 One numbered set of daily codes and challenge/response pairs, all derived from the key and the card number.
 
+**Daily code**:
+The two-letter code a card gives for one day of the month (1 to 31); the sender says it to prove they hold the card in effect.
+_Avoid_: order code, order line
+
+**Challenge**:
+A letter-digit-letter group (such as A3C) one station sends to make the other prove it holds the card in effect.
+
+**Response**:
+The letter-digit-letter group a card gives for a challenge; each printed challenge is struck after one use.
+
 ### Phone card
 
 **Enrollment code**:
 A key sealed with a passphrase so it can travel from the custodian to a phone, shown as a QR code.
 _Avoid_: enrollment QR (the QR is just how it is displayed)
+
+**Passphrase**:
+The secret of at least 12 characters the custodian sets to seal an enrollment code, given to the user separately from the code.
+_Avoid_: password, PIN
 
 **Device key**:
 The key as stored on one enrolled phone, locked by the user's PIN and erased after 5 wrong PINs in a row.

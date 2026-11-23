@@ -28,6 +28,8 @@ Then:
 3. **Choose a PIN.** The user picks a 6–12 digit PIN. The key is stored on the phone, encrypted with the PIN and with a device wrapping key that page scripts can't read out. 5 wrong PINs in a row erase it.
 4. **Use the card.** It shows the card in effect, today's daily code, and the response to **any** challenge. The page locks after 2 minutes idle or when you leave it.
 
+The phone card checks itself against fixed test vectors each time it opens, and refuses to run if any fail.
+
 Limits:
 - Installed: opens and works with no signal. In the browser only: needs a connection to open.
 - If used in the iPhone browser instead of installed, Safari may clear the stored key after about 7 days without a visit.
@@ -61,4 +63,5 @@ The page is built from `src/`:
 python3 build.py      # writes voice-auth.html, index.html and card/ (page, manifest, icons, service worker)
 node tests/test.js    # crypto and test-vector checks
 node tests/devicekey.test.js   # device key: PIN unlock, 5-wrong-PIN erase, stored format
+node tests/enrollmentcode.test.js   # enrollment code: seal/open, failure cases, codes already handed out
 ```

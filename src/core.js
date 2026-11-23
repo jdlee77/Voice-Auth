@@ -9,30 +9,7 @@ const VA = (() => {
     dv.setUint32(len - 4, bits >>> 0); dv.setUint32(len - 8, Math.floor(bits / 0x100000000));
     return dv;
   }
-  const rotl = (x, n) => (x << n) | (x >>> (32 - n));
   const rotr = (x, n) => (x >>> n) | (x << (32 - n));
-
-  function sha1(msg) {
-    const dv = pad(msg), w = new Uint32Array(80);
-    let h = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0];
-    for (let off = 0; off < dv.byteLength; off += 64) {
-      for (let i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4);
-      for (let i = 16; i < 80; i++) w[i] = rotl(w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16], 1);
-      let [a, b, c, d, e] = h;
-      for (let i = 0; i < 80; i++) {
-        let f, k;
-        if (i < 20) { f = (b & c) | (~b & d); k = 0x5A827999; }
-        else if (i < 40) { f = b ^ c ^ d; k = 0x6ED9EBA1; }
-        else if (i < 60) { f = (b & c) | (b & d) | (c & d); k = 0x8F1BBCDC; }
-        else { f = b ^ c ^ d; k = 0xCA62C1D6; }
-        const t = (rotl(a, 5) + f + e + k + w[i]) >>> 0;
-        e = d; d = c; c = rotl(b, 30); b = a; a = t;
-      }
-      h = h.map((v, i) => (v + [a, b, c, d, e][i]) >>> 0);
-    }
-    const out = new Uint8Array(20), o = new DataView(out.buffer);
-    h.forEach((v, i) => o.setUint32(i * 4, v)); return out;
-  }
 
   const K256 = new Uint32Array([
     0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
@@ -102,19 +79,6 @@ const VA = (() => {
     return new Uint8Array(out);
   }
 
-  // RFC 4226 HOTP / RFC 6238 TOTP (HMAC-SHA1)
-  function hotpRaw(key, counter) {   // RFC 4226 dynamic truncation -> 31-bit integer
-    const c = new Uint8Array(8), dv = new DataView(c.buffer);
-    dv.setUint32(0, Math.floor(counter / 0x100000000)); dv.setUint32(4, counter >>> 0);
-    const h = hmac(sha1, key, c), o = h[19] & 15;
-    return ((h[o] & 0x7f) << 24) | (h[o+1] << 16) | (h[o+2] << 8) | h[o+3];
-  }
-  const hotp = (key, counter, digits = 6) => String(hotpRaw(key, counter) % 10 ** digits).padStart(digits, '0');
-  // Order code: same TOTP value, output as two letters (mod 676) instead of digits
-  const orderCode = (key, counter) => { const n = hotpRaw(key, counter) % 676; return AZ[Math.floor(n / 26)] + AZ[n % 26]; };
-  const totpCounter = (unixSec, step) => Math.floor(unixSec / step);
-  const totp = (key, unixSec, step, digits = 6) => hotp(key, totpCounter(unixSec, step), digits);
-
   // Challenge/response (HMAC-SHA256, letter-digit-letter e.g. A3C)
   const PHON = { A:'ALFA',B:'BRAVO',C:'CHARLIE',D:'DELTA',E:'ECHO',F:'FOXTROT',G:'GOLF',H:'HOTEL',
     I:'INDIA',J:'JULIETT',K:'KILO',L:'LIMA',M:'MIKE',N:'NOVEMBER',O:'OSCAR',P:'PAPA',Q:'QUEBEC',
@@ -123,7 +87,6 @@ const VA = (() => {
   const ldl = (h) => { const n = ((h[0] << 16) | (h[1] << 8) | h[2]) % 6760;
     return AZ[Math.floor(n / 260)] + (Math.floor(n / 26) % 10) + AZ[n % 26]; };
   const phon = (s) => s.split('').map((c) => PHON[c] || c).join(' ');
-  const periodLabel = (startMs) => new Date(startMs).toISOString().slice(0, 16) + 'Z';
   const crResponse = (key, label, ch) =>
     ldl(hmac(sha256, key, enc('VAUTH1-R|' + label + '|' + ch.toUpperCase())));
   function crChallenges(key, label, n) {
@@ -137,7 +100,7 @@ const VA = (() => {
   // Time-free cards: everything derives from key + card number
   const cardLabel = (no) => 'CARD-' + no;
   const two = (h) => { const n = ((h[0] << 8) | h[1]) % 676; return AZ[Math.floor(n / 26)] + AZ[n % 26]; };
-  function orderLines(key, no, n) {
+  function dailyCodes(key, no, n) {
     const out = [], seen = new Set();
     for (let i = 0; out.length < n && i < 5000; i++) {
       const c = two(hmac(sha256, key, enc('VAUTH1-O|' + cardLabel(no) + '|' + i)));
@@ -145,10 +108,52 @@ const VA = (() => {
     }
     return out;
   }
+
+  // A Card: card(key, no) -> { no, dailyCode(day), dailyCodes(), challenges(n), respond(challenge) }
+  //   dailyCode(day): the daily code for day 1-31 of the month. respond('a3c') -> { status: 'ok', response } | { status: 'bad-format' }
+  //   A card number outside 1-9999 or a day outside 1-31 can only come from a bug, so they throw RangeError.
+  const CHALLENGE = /^[A-Z][0-9][A-Z]$/;
+  function card(key, no) {
+    if (!Number.isInteger(no) || no < 1 || no > 9999) throw new RangeError('Card number must be a whole number 1-9999: ' + no);
+    const label = cardLabel(no);
+    let days = null;
+    const all = () => (days = days || dailyCodes(key, no, 31));
+    return {
+      no,
+      dailyCodes: () => all().slice(),
+      dailyCode(day) {
+        if (!Number.isInteger(day) || day < 1 || day > 31) throw new RangeError('Day must be a whole number 1-31: ' + day);
+        return all()[day - 1];
+      },
+      challenges: (n) => crChallenges(key, label, n),
+      respond(challenge) {
+        const ch = String(challenge).toUpperCase();
+        return CHALLENGE.test(ch) ? { status: 'ok', response: crResponse(key, label, ch) } : { status: 'bad-format' };
+      },
+    };
+  }
   const hex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('').toUpperCase();
   const fingerprint = (key) => hex(sha256(key).slice(0, 2));
 
-  return { enc, sha1, sha256, hmac, hex, b32encode, b32decode, hotp, hotpRaw, orderCode, totp, totpCounter,
-           crResponse, crChallenges, periodLabel, phon, fingerprint, cardLabel, orderLines };
+  // Self-test: fixed vectors both pages check when they open. A copy that fails must not be used.
+  // -> { ok, failed: [names of the checks that did not match] }
+  function selfTest() {
+    const k = enc('12345678901234567890'), c1 = card(k, 1);
+    const hm = (key, m) => hex(hmac(sha256, key, enc(m)));
+    const checks = {
+      'sha256 abc (FIPS 180)': () => hex(sha256(enc('abc'))) === 'BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD',
+      'rfc4231 case 1': () => hm(new Uint8Array(20).fill(11), 'Hi There') === 'B0344C61D8DB38535CA8AFCEAF0BF12B881DC200C9833DA726E9376C2E32CFF7',
+      'rfc4231 case 2': () => hm(enc('Jefe'), 'what do ya want for nothing?') === '5BDCC146BF60754E6A042426089575C75A003F089D2739839DEC58B964EC3843',
+      'base32 foobar (RFC 4648)': () => b32encode(enc('foobar')) === 'MZXW6YTBOI' && hex(b32decode('MZXW6YTBOI')) === hex(enc('foobar')),
+      'daily codes card 1': () => c1.dailyCodes().slice(0, 3).join(',') === 'RZ,YB,WT',
+      'challenges card 1': () => c1.challenges(3).join(',') === 'A6A,W2F,X8O',
+      'response A3C card 1': () => c1.respond('A3C').response === 'I7J',
+      'fingerprint': () => fingerprint(k) === '6ED6',
+    };
+    const failed = Object.keys(checks).filter((name) => { try { return !checks[name](); } catch (e) { return true; } });
+    return { ok: failed.length === 0, failed };
+  }
+
+  return { enc, sha256, hmac, hex, b32encode, b32decode, fingerprint, phon, card, selfTest };
 })();
 if (typeof module !== 'undefined') module.exports = VA;

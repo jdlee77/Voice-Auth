@@ -156,7 +156,7 @@
   <p><b>Challenge/response.</b> Format letter-digit-letter (e.g. A3C), 6,760 possible values. <code>h = HMAC-SHA256(key, "VAUTH1-R|" + label + "|" + CHALLENGE)</code>; <code>n = ((h[0]&lt;&lt;16)|(h[1]&lt;&lt;8)|h[2]) mod 6760</code>; response = letter[n div 260] + digit[(n div 26) mod 10] + letter[n mod 26]. Printed challenges use the same mapping on <code>"VAUTH1-C|" + label + "|" + i</code>, skipping duplicates.</p>
   <p><b>Test vectors.</b> Key = ASCII "12345678901234567890", Card 1: daily codes for days 1–3 = <b>RZ, YB, WT</b>; challenges 1–3 = <b>A6A, W2F, X8O</b>; challenge A3C → <b>I7J</b>. Fingerprint 6ED6.</p>
   <p><b>Strength.</b> A guessed order code has a 1 in 676 chance. A guessed response has a 1 in 6,760 chance. A daily code can be replayed by anyone who overhears it until the day ends, and it comes back on the same day next month on the same card. Struck challenge lines can't be replayed. This catches impersonators and pranksters, not a determined adversary with many attempts, so a failed code on a critical order always means confirm by another path.</p>
-  <p><b>Phone enrollment code.</b> <code>VAUTH1.salt.iterations.iv.ciphertext</code> (base64url). AES-256-GCM, with the key derived by PBKDF2-SHA256 from the passphrase (310,000 iterations, 16-byte random salt). The plaintext is JSON holding the Base32 secret, fingerprint, key version and incident name.</p>
+  <p><b>Phone enrollment code.</b> <code>VAUTH1.salt.iterations.iv.ciphertext</code> (base64url). AES-256-GCM, with the key derived by PBKDF2-SHA256 from the passphrase (310,000 iterations, 16-byte random salt). The plaintext is JSON holding the Base32 secret, fingerprint, key version and incident name. A code with an iteration count outside 100,000–2,000,000 is refused.</p>
   <p><b>Operating rules.</b> The custodian announces the card in effect ("Authentication: Card Four") and, across time zones or near midnight, the day. Strike every challenge line after use. If codes fail, first confirm the card and day. Switch to a new card at least monthly, when challenges run low, or when a card may be compromised. Rotate the key if a set of cards is lost.</p>
   </details>
 </section>
@@ -164,7 +164,7 @@
 
 <script>/*QRLIB*/</script>
 <script>/*CORE*/</script>
-<script>/*VAULT*/</script>
+<script>/*ENROLLMENTCODE*/</script>
 <script>/*APP*/</script>
 </body>
 </html>
