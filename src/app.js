@@ -71,18 +71,40 @@
     r.readAsText(f);
   };
   window.addEventListener('beforeunload', (e) => { if (S.key && !S.exported) { e.preventDefault(); e.returnValue = ''; } });
-  ['incName', 'incNo', 'custodian', 'nCh', 'fromCard', 'cardCount'].forEach((id) => $(id).addEventListener('change', clearCards));
+  ['incName', 'incNo', 'custodian', 'nCh', 'fromCard', 'cardCount', 'cardSize'].forEach((id) => $(id).addEventListener('change', clearCards));
 
   function clearCards() { if (!S.cards) return; S.cards = null; $('cards').innerHTML = ''; $('btnPrint').disabled = true;
     $('cardsNote').textContent = 'Settings changed. Build cards again.'; }
 
   // ---------- cards ----------
+  // Badge size (85.6 x 54 mm): front = all 31 daily codes, back = up to BADGE_MAX challenge/response pairs.
+  // No phonetics: they don't fit, and operators read the letters in NATO phonetics anyway.
+  const BADGE_MAX = 32;
+  function badgeHtml(card, nCh, inc, incNo, fp) {
+    const days = card.dailyCodes().map((c, i) => `<div><span>${pad2(i + 1)}</span>${c}</div>`).join('');
+    const ch = card.challenges(Math.min(nCh, BADGE_MAX));
+    const cols = ch.length <= 8 ? 1 : ch.length <= 16 ? 2 : ch.length <= 24 ? 3 : 4;
+    const fs = ['9pt', '8.5pt', '7.5pt', '6.5pt'][cols - 1];
+    const pairs = ch.map((x) => `<div>☐ ${x}<i>→</i>${card.respond(x).response}</div>`).join('');
+    const top = `<div class="no"><small>CARD</small>${card.no}</div>
+        <div class="meta"><div><b>CONTROLLED · VOICE AUTH</b></div><div>${inc}${incNo !== '—' ? ' · #' + incNo : ''}</div><div>Key v${S.version} · FP ${fp}</div></div>`;
+    return `<div class="badge-pair">
+      <div class="badge front"><div class="top">${top}</div>
+        <h4>Daily codes · day of month</h4><div class="days">${days}</div>
+        <div class="rule">Use only the card announced by the custodian. Wrong code or response = NOT authenticated. Report a lost card at once.</div></div>
+      <div class="badge back"><div class="top">${top}</div>
+        <h4>Challenge → response · strike after use</h4><div class="pairs" style="grid-template-columns:repeat(${cols},auto);justify-content:space-around;--fs:${fs}">${pairs}</div>
+        <div class="rule">Never reuse a struck challenge. Unsure? Confirm the card and day, then confirm by another path.</div></div>
+    </div>`;
+  }
+
   $('btnBuild').onclick = () => {
-    const nCh = intIn('nCh', 4, 100);
+    const nCh = intIn('nCh', 4, 100), badge = $('cardSize').value === 'badge';
     const from = intIn('fromCard', 1, 9999), count = +$('cardCount').value;
     const inc = esc($('incName').value || '—'), incNo = esc($('incNo').value || '—'), cust = esc($('custodian').value || '—');
     const fp = VA.fingerprint(S.key); let html = '';
     for (let cardNo = from; cardNo < from + count; cardNo++) {
+      if (badge) { html += badgeHtml(VA.card(S.key, cardNo), nCh, inc, incNo, fp); continue; }
       const card = VA.card(S.key, cardNo);
       const days = card.dailyCodes();
       const codes = days.map((oc, i) =>
@@ -106,7 +128,9 @@
       </div>`;
     }
     $('cards').innerHTML = html; S.cards = true; $('btnPrint').disabled = false;
-    $('cardsNote').textContent = `Card${count > 1 ? 's' : ''} ${from}${count > 1 ? '–' + (from + count - 1) : ''} built for key v${S.version} (FP ${fp}). One page per card.`;
+    $('cardsNote').textContent = `Card${count > 1 ? 's' : ''} ${from}${count > 1 ? '–' + (from + count - 1) : ''} built for key v${S.version} (FP ${fp}). `
+      + (badge ? `Badge size, 4 per page${nCh > BADGE_MAX ? `, first ${BADGE_MAX} challenges` : ''}. Print at 100% scale (Actual size), cut on the solid outline and fold on the dashed line.`
+        : 'One page per card.');
   };
   $('btnPrint').onclick = () => window.print();
 
