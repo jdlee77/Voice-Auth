@@ -10,19 +10,15 @@ for (let n = 0; n < 300; n++) {
   eq('sha256 ' + n, VA.hex(VA.sha256(m)), crypto.createHash('sha256').update(m).digest('hex').toUpperCase());
   eq('hmac-sha256 ' + n, VA.hex(VA.hmac(VA.sha256, k, m)), crypto.createHmac('sha256', k).update(m).digest('hex').toUpperCase());
 }
-// RFC 4231 HMAC-SHA256 test case 2
-eq('rfc4231', VA.hex(VA.hmac(VA.sha256, VA.enc('Jefe'), VA.enc('what do ya want for nothing?'))).toLowerCase(),
-   '5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843');
+// Built-in self-test: the fixed vectors both pages check when they open (SHA-256, RFC 4231, Base32, Voice Auth)
+const st = VA.selfTest();
+eq('selfTest ok', st.ok, true);
+eq('selfTest failed list', st.failed.join(','), '');
 // Base32 round trip
 for (let n = 1; n < 40; n++) { const b = crypto.randomBytes(n); eq('b32 ' + n, VA.hex(VA.b32decode(VA.b32encode(b))), VA.hex(b)); }
 
-// Voice Auth test vectors (also in the in-app spec)
 const key = VA.enc('12345678901234567890');
 const card1 = VA.card(key, 1);
-eq('daily codes card 1', card1.dailyCodes().slice(0, 3).join(','), 'RZ,YB,WT');
-eq('challenges card 1', card1.challenges(3).join(','), 'A6A,W2F,X8O');
-eq('response card 1 A3C', card1.respond('A3C').response, 'I7J');
-eq('fingerprint', VA.fingerprint(key), '6ED6');
 
 // Cards already printed must keep matching: made by orderLines/crChallenges/crResponse before card() existed
 const PRINTED = {

@@ -185,6 +185,8 @@
 
   // ---------- start ----------
   (async () => {
+    const st = VA.selfTest();
+    if (!st.ok) { $('brokenChecks').textContent = st.failed.join(', '); show('scrBroken'); return; }
     if (!window.crypto || !crypto.subtle) { msg('enrollMsg', 'Open this page from its https:// address (the GitHub Pages site). It cannot run here.', 'bad'); show('scrEnroll'); return; }
     try { meta = await deviceKey.load(); } catch (e) { msg('enrollMsg', e.message + ' Private browsing may block storage.', 'bad'); show('scrEnroll'); return; }
     meta ? showUnlock() : show('scrEnroll');

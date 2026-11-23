@@ -62,6 +62,15 @@
   <button class="primary" id="btnInstall" hidden>Install app</button>
 </div>
 
+<!-- 0. Self-test failed: nothing else is shown -->
+<section class="screen" id="scrBroken">
+  <div class="box">
+    <h2>Self-test failed</h2>
+    <p class="msg bad">Do not use this copy. It does not compute the right codes.</p>
+    <p>Failed checks: <span id="brokenChecks"></span></p>
+  </div>
+</section>
+
 <!-- 1. Enroll -->
 <section class="screen" id="scrEnroll">
   <div class="box">
@@ -10377,7 +10386,26 @@ const VA = (() => {
   const hex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('').toUpperCase();
   const fingerprint = (key) => hex(sha256(key).slice(0, 2));
 
-  return { enc, sha256, hmac, hex, b32encode, b32decode, fingerprint, phon, card };
+  // Self-test: fixed vectors both pages check when they open. A copy that fails must not be used.
+  // -> { ok, failed: [names of the checks that did not match] }
+  function selfTest() {
+    const k = enc('12345678901234567890'), c1 = card(k, 1);
+    const hm = (key, m) => hex(hmac(sha256, key, enc(m)));
+    const checks = {
+      'sha256 abc (FIPS 180)': () => hex(sha256(enc('abc'))) === 'BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD',
+      'rfc4231 case 1': () => hm(new Uint8Array(20).fill(11), 'Hi There') === 'B0344C61D8DB38535CA8AFCEAF0BF12B881DC200C9833DA726E9376C2E32CFF7',
+      'rfc4231 case 2': () => hm(enc('Jefe'), 'what do ya want for nothing?') === '5BDCC146BF60754E6A042426089575C75A003F089D2739839DEC58B964EC3843',
+      'base32 foobar (RFC 4648)': () => b32encode(enc('foobar')) === 'MZXW6YTBOI' && hex(b32decode('MZXW6YTBOI')) === hex(enc('foobar')),
+      'daily codes card 1': () => c1.dailyCodes().slice(0, 3).join(',') === 'RZ,YB,WT',
+      'challenges card 1': () => c1.challenges(3).join(',') === 'A6A,W2F,X8O',
+      'response A3C card 1': () => c1.respond('A3C').response === 'I7J',
+      'fingerprint': () => fingerprint(k) === '6ED6',
+    };
+    const failed = Object.keys(checks).filter((name) => { try { return !checks[name](); } catch (e) { return true; } });
+    return { ok: failed.length === 0, failed };
+  }
+
+  return { enc, sha256, hmac, hex, b32encode, b32decode, fingerprint, phon, card, selfTest };
 })();
 if (typeof module !== 'undefined') module.exports = VA;
 </script>
@@ -10694,6 +10722,8 @@ if (typeof module !== 'undefined') module.exports = DeviceKey;
 
   // ---------- start ----------
   (async () => {
+    const st = VA.selfTest();
+    if (!st.ok) { $('brokenChecks').textContent = st.failed.join(', '); show('scrBroken'); return; }
     if (!window.crypto || !crypto.subtle) { msg('enrollMsg', 'Open this page from its https:// address (the GitHub Pages site). It cannot run here.', 'bad'); show('scrEnroll'); return; }
     try { meta = await deviceKey.load(); } catch (e) { msg('enrollMsg', e.message + ' Private browsing may block storage.', 'bad'); show('scrEnroll'); return; }
     meta ? showUnlock() : show('scrEnroll');

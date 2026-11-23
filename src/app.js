@@ -163,14 +163,9 @@
 
   // ---------- self-test ----------
   (() => {
-    const k = VA.enc('12345678901234567890');
-    const h = (key, m) => VA.hex(VA.hmac(VA.sha256, key, VA.enc(m))).toLowerCase();
-    const ok = h(VA.enc('Jefe'), 'what do ya want for nothing?') === '5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843'
-      && h(new Uint8Array(20).fill(11), 'Hi There') === 'b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7'
-      && VA.card(k, 1).dailyCodes().slice(0, 3).join(',') === 'RZ,YB,WT'
-      && VA.card(k, 1).challenges(3).join(',') === 'A6A,W2F,X8O'
-      && VA.card(k, 1).respond('A3C').response === 'I7J' && VA.fingerprint(k) === '6ED6';
+    const { ok, failed } = VA.selfTest();
     const el = $('selftest'); el.className = 'result ' + (ok ? 'ok' : 'bad');
-    el.textContent = ok ? '✔ Self-test passed: RFC 4231 HMAC-SHA256 vectors and Voice Auth test vectors match.' : '✘ SELF-TEST FAILED. Do not use this copy.';
+    el.textContent = ok ? '✔ Self-test passed: SHA-256, RFC 4231 HMAC-SHA256, Base32 and Voice Auth test vectors match.'
+      : '✘ SELF-TEST FAILED. Do not use this copy. Failed: ' + failed.join(', ');
   })();
 })();
