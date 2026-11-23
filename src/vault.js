@@ -1,4 +1,4 @@
-// ===== Voice Auth vault: passphrase/PIN encryption using the browser's built-in WebCrypto =====
+// ===== Voice Auth vault: enrollment codes (passphrase encryption) using the browser's built-in WebCrypto =====
 // Enrollment code format:  VAUTH1.<salt>.<iterations>.<iv>.<ciphertext>   (base64url parts)
 // Encryption: AES-256-GCM, key from PBKDF2-SHA256(passphrase, salt, iterations).
 const Vault = (() => {
@@ -32,20 +32,6 @@ const Vault = (() => {
     } catch (e) { throw new Error('Wrong passphrase, or the code is damaged.'); }
   }
 
-  // On-device storage: key wrapped twice, by a PIN-derived key and by a non-extractable device key
-  async function wrapForDevice(secretBytes, pin) {
-    const deviceKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
-    const salt = rand(16), iv1 = rand(12), iv2 = rand(12);
-    const inner = await enc(await deriveKey(pin, salt, ITER), iv1, secretBytes);
-    const outer = await enc(deviceKey, iv2, inner);
-    return { deviceKey, salt, iv1, iv2, outer };
-  }
-  async function unwrapOnDevice(rec, pin) {
-    const inner = await dec(rec.deviceKey, rec.iv2, rec.outer);
-    try { return await dec(await deriveKey(pin, rec.salt, ITER), rec.iv1, inner); }
-    catch (e) { throw new Error('Wrong PIN'); }
-  }
-
-  return { seal, open, wrapForDevice, unwrapOnDevice };
+  return { seal, open };
 })();
 if (typeof module !== 'undefined') module.exports = Vault;
