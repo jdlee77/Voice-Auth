@@ -40,8 +40,19 @@ Limits:
 
 1. **Generate a key.** Then export the key file and keep it under the custodian's control. Without it, cards can't be reprinted.
 2. **Choose and print.** Pick the cards to print, then print or save them as PDF. You get one page per card, or choose **Card size: Badge** for credit-card-size cards (85.6 × 54 mm) to carry with an ID badge: four to a page, daily codes on the front and challenge/response on the back. Print at 100% scale (Actual size), cut on the solid outline and fold on the dashed line. Badge cards hold up to 32 challenges and leave out the phonetics.
-3. **Use the card console.** It looks up or checks a daily code for any card and day, and answers challenges.
+3. **Make an enrollment code** (section 3) for a phone or a far end. See below.
 4. **Rotate the key if a set of cards is lost.**
+
+## Far-end printing
+
+A far end (a station away from the custodian) can print its own cards from the same enrollment QR code and passphrase used for phones, at **https://jdlee77.github.io/Voice-Auth/print/**.
+
+1. Scan the QR code (camera or a photo of it) or paste the code, and enter the passphrase.
+2. Confirm the key fingerprint with the custodian.
+3. Choose the cards, and full-page or badge size, then **Print / Save as PDF**. The device's print dialog saves a PDF on Windows, Mac, Android (Save as PDF) and iPhone (Share → Save to Files).
+4. Tap **Done, clear key**.
+
+Nothing is stored: the key stays only in the page's memory until it's cleared or the page closes. The enrollment code holds the whole key, so whoever has it and the passphrase can print any card. Treat printed cards and saved PDFs as controlled items.
 
 ## Security notes
 
@@ -60,8 +71,9 @@ Limits:
 The page is built from `src/`:
 
 ```
-python3 build.py      # writes voice-auth.html, index.html and card/ (page, manifest, icons, service worker)
+python3 build.py      # writes voice-auth.html, index.html, card/ (page, manifest, icons, service worker) and print/
 node tests/test.js    # crypto and test-vector checks
 node tests/devicekey.test.js   # device key: PIN unlock, 5-wrong-PIN erase, stored format
 node tests/enrollmentcode.test.js   # enrollment code: seal/open, failure cases, codes already handed out
+node tests/cardsheet.test.js   # printed cards (full page and badge) for the tool and far-end printing
 ```
