@@ -9,8 +9,7 @@
   function setKey(bytes, version, created) {
     S.key = bytes; S.secret = VA.b32encode(bytes); S.version = version; S.created = created;
     $('secretBox').hidden = true; $('btnShow').textContent = 'Show secret';
-    ['btnExport', 'btnRotate', 'btnShow', 'btnBuild', 'btnEnroll'].forEach((b) => ($(b).disabled = false));
-    EnrollPanel.reset();
+    ['btnExport', 'btnRotate', 'btnShow', 'btnBuild'].forEach((b) => ($(b).disabled = false));
     renderKeyInfo(); clearCards();
   }
   function renderKeyInfo() {
@@ -84,8 +83,6 @@
     $('cardsNote').textContent = note;
   };
   $('btnPrint').onclick = () => window.print();
-
-  EnrollPanel.attach(() => S.key && { key: S.key, version: S.version, incident: $('incName').value || '' });
 
   // ---------- self-test ----------
   (() => {

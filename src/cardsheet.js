@@ -1,4 +1,4 @@
-// ===== Voice Auth card sheet: printed cards, shared by the custodian tool and the far-end print page =====
+// ===== Voice Auth card sheet: the printed cards (full page or badge size) built by the custodian tool =====
 // CardSheet.html(key, { from, count, challenges, size: 'page' | 'badge', version, fingerprint, incident, incidentNo, custodian })
 //   -> { html, note }   html goes in #cards; note says what was built and how to print it. Styles: cardsheet.css.
 // Full page: one page per card, with phonetics. Badge: 85.6 x 54 mm (ISO/IEC 7810 ID-1), front = all 31 daily codes,

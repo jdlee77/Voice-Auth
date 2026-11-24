@@ -1,5 +1,5 @@
 // Run: node tests/cardsheet.test.js
-// Card sheet: the printed cards (full page or badge) shared by the custodian tool and the far-end print page.
+// Card sheet: the printed cards (full page or badge size) built by the custodian tool.
 const CardSheet = require('../src/cardsheet.js');
 const VA = require('../src/core.js');
 let fail = 0;

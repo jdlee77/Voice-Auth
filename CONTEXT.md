@@ -25,29 +25,3 @@ A letter-digit-letter group (such as A3C) one station sends to make the other pr
 
 **Response**:
 The letter-digit-letter group a card gives for a challenge; each printed challenge is struck after one use.
-
-### Enrollment
-
-**Enrollment code**:
-A key sealed with a passphrase so it can travel from the custodian to a phone or a far end, shown as a QR code.
-_Avoid_: enrollment QR (the QR is just how it is displayed)
-
-**Far end**:
-A station away from the custodian that prints its own cards from an enrollment code.
-_Avoid_: remote site, field station
-
-**Passphrase**:
-The secret of at least 12 characters the custodian sets to seal an enrollment code, given to the user separately from the code.
-_Avoid_: password, PIN
-
-**Device key**:
-The key as stored on one enrolled phone, locked by the user's PIN and erased after 5 wrong PINs in a row.
-_Avoid_: stored key, phone vault
-
-**Device wrapping key**:
-A key that the phone generates when it enrolls and that cannot be read out of that phone; the device key is also locked with it, so a copy of the stored data is useless elsewhere.
-_Avoid_: device key (that term means the enrolled key itself)
-
-**PIN**:
-The 6 to 12 digits the user chooses to unlock the device key on their phone.
-_Avoid_: passphrase (that protects the enrollment code)

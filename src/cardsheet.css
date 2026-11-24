@@ -1,4 +1,4 @@
-/* ===== Voice Auth card sheet styles: printed cards, shared by the custodian tool and the far-end print page ===== */
+/* ===== Voice Auth card sheet styles: printed cards, full page and badge size ===== */
   /* ---------- printed card ---------- */
   #cards { display:grid; gap:18px; }
   .card { background:#fff; border:2px solid #000; padding:14px 16px; color:#000; font-size:11px; }
