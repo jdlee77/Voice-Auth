@@ -1,7 +1,7 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const IDLE_MS = 120000;
-  let meta = null, secret = null, pending = null, cardNo = 1, day = new Date().getDate(), idleTimer = null, stream = null;
+  let meta = null, secret = null, pending = null, cardNo = 1, day = new Date().getDate(), idleTimer = null;
 
   // ---------- small IndexedDB key/value store ----------
   const dbp = new Promise((res, rej) => {
@@ -29,41 +29,10 @@
   const metaText = (m) => `Key v${m.v} · fingerprint ${m.f}${m.n ? ' · ' + m.n : ''}`;
 
   // ---------- QR reading (camera or photo) ----------
-  function decodeFrom(source, w, h) {
-    const scale = Math.min(1, 1600 / Math.max(w, h)), cw = Math.round(w * scale), ch = Math.round(h * scale);
-    const c = document.createElement('canvas'); c.width = cw; c.height = ch;
-    const ctx = c.getContext('2d', { willReadFrequently: true }); ctx.drawImage(source, 0, 0, cw, ch);
-    const qr = jsQR(ctx.getImageData(0, 0, cw, ch).data, cw, ch, { inversionAttempts: 'attemptBoth' });
-    return qr && EnrollmentCode.looks(qr.data) ? qr.data : null;
-  }
-  function gotCode(code) {
-    stopCamera(); $('codeIn').value = code;
-    msg('enrollMsg', 'QR code read. Now enter the passphrase.', 'ok'); $('passIn').focus();
-  }
-  function stopCamera() { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; } $('video').style.display = 'none'; }
-  $('btnScan').onclick = async () => {
-    if (stream) { stopCamera(); return; }
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-      const v = $('video'); v.srcObject = stream; v.style.display = 'block'; await v.play();
-      msg('enrollMsg', 'Point the camera at the QR code.');
-      const loop = () => {
-        if (!stream) return;
-        if (v.videoWidth) { const code = decodeFrom(v, v.videoWidth, v.videoHeight); if (code) return gotCode(code); }
-        requestAnimationFrame(loop);
-      };
-      loop();
-    } catch (e) { stopCamera(); msg('enrollMsg', 'Camera not available. Use a photo of the QR code, or paste the code instead.', 'bad'); }
-  };
-  $('btnPhoto').onclick = () => $('photoIn').click();
-  $('photoIn').onchange = (e) => {
-    const f = e.target.files[0]; if (!f) return;
-    const url = URL.createObjectURL(f), img = new Image();
-    img.onload = () => { const code = decodeFrom(img, img.naturalWidth, img.naturalHeight); URL.revokeObjectURL(url);
-      code ? gotCode(code) : msg('enrollMsg', 'No Voice Auth QR code found in that photo. Try again closer and in focus.', 'bad'); };
-    img.onerror = () => { URL.revokeObjectURL(url); msg('enrollMsg', 'Could not read that image.', 'bad'); };
-    img.src = url; e.target.value = '';
-  };
+  QrScan.attach({
+    onCode: (code) => { $('codeIn').value = code; msg('enrollMsg', 'QR code read. Now enter the passphrase.', 'ok'); $('passIn').focus(); },
+    onMsg: (text, cls) => msg('enrollMsg', text, cls),
+  });
 
   // ---------- enroll ----------
   $('btnOpen').onclick = async () => {

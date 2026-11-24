@@ -32,67 +32,17 @@
   .result.ok { color:var(--ok); } .result.bad { color:var(--bad); }
   #enrollOut svg { width:220px; height:220px; display:block; margin:10px 0 4px; }
   #enrollOut textarea { width:100%; font:11px ui-monospace,Menlo,Consolas,monospace; height:60px; }
-  .contitle { font:700 26px/1.2 system-ui,sans-serif; margin:2px 0 4px; }
   details summary { cursor:pointer; font-weight:600; }
+  ul.uses { margin:4px 0 0; padding-left:18px; } ul.uses li { margin:2px 0; }
   .spec { font-size:13.5px; } .spec code { background:#eef1f4; padding:1px 4px; border-radius:3px; }
 
-  /* ---------- printed card ---------- */
-  #cards { display:grid; gap:18px; }
-  .card { background:#fff; border:2px solid #000; padding:14px 16px; color:#000; font-size:11px; }
-  .card .banner { text-align:center; font-weight:800; letter-spacing:.12em; border:2px solid #000; padding:3px; margin-bottom:8px; font-size:12px; }
-  .card .hd { display:grid; grid-template-columns:1fr 2fr 2fr; gap:2px 14px; border-bottom:1.5px solid #000; padding-bottom:6px; margin-bottom:8px; }
-  .card .hd b { display:block; font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:#333; }
-  .card .hd .cardno { font-size:34px; font-weight:800; line-height:1; border:2.5px solid #000; padding:3px 8px; text-align:center; }
-  .card h3 { font-size:11px; margin:9px 0 4px; text-transform:uppercase; letter-spacing:.04em; }
-  .card .codes { columns:3; column-gap:16px; }
-  .card .codes div { break-inside:avoid; border-bottom:.5px dotted #999; padding:2px 0; display:flex; align-items:baseline; gap:7px; }
-  .card .codes .bx { font-size:12px; }
-  .card .codes .ln { font:600 10.5px ui-monospace,Menlo,Consolas,monospace; color:#333; width:46px; }
-  .card .codes b { font:700 13px ui-monospace,Menlo,Consolas,monospace; letter-spacing:.05em; width:24px; }
-  .card .codes i { font-style:normal; font-size:9px; color:#444; }
-  .card table { width:100%; border-collapse:collapse; font-size:10.5px; }
-  .card td, .card th { border:.75px solid #555; padding:2px 5px; text-align:left; }
-  .card th { background:#eee; font-size:9px; text-transform:uppercase; }
-  .card td b { font:700 12.5px ui-monospace,Menlo,Consolas,monospace; }
-  .card td span { color:#444; font-size:9.5px; }
-  .card td.box { width:16px; }
-  .card .cr { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .card .ft { margin-top:9px; border-top:1.5px solid #000; padding-top:5px; font-size:9.5px; }
-
-  /* Badge size: ISO/IEC 7810 ID-1 (credit card), 85.6 x 53.98 mm. Front and back side by side: cut on the
-     solid outline, fold on the dashed line. Sizes are in mm/pt so they print true at 100% scale. */
-  .badge-pair { display:flex; width:171.2mm; height:53.98mm; margin:0 auto 6mm; break-inside:avoid; page-break-inside:avoid; }
-  .badge { width:85.6mm; height:53.98mm; box-sizing:border-box; border:.3mm solid #000; padding:1.8mm 2.2mm; background:#fff; color:#000;
-           overflow:hidden; display:flex; flex-direction:column; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
-  .badge.front { border-right:none; }
-  .badge.back { border-left:.3mm dashed #777; }
-  .badge .top { display:flex; justify-content:space-between; align-items:flex-start; gap:2mm; border-bottom:.3mm solid #000; padding-bottom:.8mm; margin-bottom:1mm; }
-  .badge .no { font-weight:800; font-size:17pt; line-height:.95; white-space:nowrap; }
-  .badge .no small { display:block; font-size:5pt; font-weight:700; letter-spacing:.08em; }
-  .badge .meta { text-align:right; font-size:5.5pt; line-height:1.3; min-width:0; }
-  .badge .meta div { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .badge .meta b { letter-spacing:.06em; }
-  .badge h4 { font-size:5.5pt; margin:0 0 .5mm; text-transform:uppercase; letter-spacing:.05em; }
-  .badge .days { display:grid; grid-template-columns:repeat(8,1fr); gap:.6mm .6mm; }
-  .badge .days div { display:flex; flex-direction:column; align-items:center; border:.15mm solid #999; border-radius:.6mm; padding:.2mm 0 .3mm;
-                     font:700 10pt ui-monospace,Menlo,Consolas,monospace; line-height:1.05; }
-  .badge .days span { font:600 5pt ui-monospace,Menlo,Consolas,monospace; color:#444; line-height:1.1; }
-  .badge .pairs { display:grid; gap:.3mm 2.2mm; }
-  .badge .pairs div { display:flex; align-items:baseline; gap:.8mm; white-space:nowrap; border-bottom:.15mm dotted #999;
-                      font:700 var(--fs) ui-monospace,Menlo,Consolas,monospace; line-height:1.2; }
-  .badge .pairs i { font-style:normal; font-weight:400; font-size:.8em; }
-  .badge .rule { margin-top:auto; border-top:.3mm solid #000; padding-top:.6mm; font-size:5pt; line-height:1.2; }
+  /*CARDSHEETCSS*/
 
   @media print {
-    @page { size: letter; margin: 0.4in; }
     body { background:#fff; }
     header, main > section:not(#cardsPanel), #cardsPanel > :not(#cards) { display:none !important; }
     main { display:block; padding:0; max-width:none; }
     #cardsPanel { border:0; padding:0; }
-    .card { page-break-after:always; break-after:page; }
-    .card .cr, .card .ft { break-inside:avoid; }
-    .badge-pair { margin:0 0 5mm; }
-    .badge-pair:nth-child(4n) { page-break-after:always; break-after:page; }
   }
 </style>
 </head>
@@ -143,8 +93,13 @@
 </section>
 
 <section class="panel">
-  <h2>3 · Phone enrollment</h2>
-  <p class="note" style="margin-top:0">Lets a phone show the same cards using the web page at <b>/card/</b> on this site. The QR code holds the key, locked with a passphrase you choose.</p>
+  <h2>3 · Enrollment code</h2>
+  <p class="note" style="margin-top:0">One QR code and passphrase, two uses:</p>
+  <ul class="note uses">
+    <li><b>Phone app</b> at <b>/card/</b> on this site: shows the card in effect on a phone, locked with a PIN.</li>
+    <li><b>Far-end printing</b> at <b>/print/</b> on this site: a far end prints its own full-page or badge cards, or saves them as PDF. Nothing is stored.</li>
+  </ul>
+  <p class="note">The QR code holds the <b>whole key</b>, locked with the passphrase you choose. Whoever has both can make any card.</p>
   <div class="row">
     <div><label>Enrollment passphrase (12+ characters)</label><input type="password" id="encPass" autocomplete="new-password"></div>
     <div><label>Confirm passphrase</label><input type="password" id="encPass2" autocomplete="new-password"></div>
@@ -154,30 +109,14 @@
   <div class="warn">Give the QR code and the passphrase <b>separately</b>: show the QR in person and say the passphrase out loud, or send them by different routes. Anyone who has both can produce valid codes.</div>
 </section>
 
-<section class="panel">
-  <h2>4 · Card console</h2>
-  <label>Card in effect</label><input type="number" id="conCard" value="1" min="1" max="9999">
-  <div class="contitle" id="conTitle"></div>
-  <label>Order code: day of month (and code to check)</label>
-  <div class="row">
-    <input id="chkLine" class="mono" type="number" min="1" max="31" placeholder="Day, e.g. 21">
-    <input id="chkCode" class="mono" maxlength="2" placeholder="Code, e.g. KB" style="text-transform:uppercase">
-  </div>
-  <div class="result" id="chkLineRes"></div>
-  <label>Answer a challenge</label>
-  <input id="chkCh" class="mono" maxlength="3" placeholder="letter-number-letter, e.g. A3C" style="text-transform:uppercase">
-  <div class="result" id="chkChRes"></div>
-  <p class="note">The day box starts at today's date on this computer. Change it if the custodian has announced a different day.</p>
-</section>
-
 <section class="panel wide" id="cardsPanel">
-  <h2>5 · Preview</h2>
+  <h2>4 · Preview</h2>
   <p class="note" id="cardsNote">Build cards to preview them here. Printing produces one page per card.</p>
   <div id="cards"></div>
 </section>
 
 <section class="panel wide">
-  <h2>6 · Self-test &amp; algorithm spec</h2>
+  <h2>5 · Self-test &amp; algorithm spec</h2>
   <div id="selftest" class="result"></div>
   <details class="spec"><summary>Algorithm spec. Any other implementation must match this exactly.</summary>
   <p><b>Key.</b> 20 random bytes (160-bit) from the browser's cryptographic random generator, exchanged as RFC 4648 Base32. Key fingerprint = first 2 bytes of SHA-256(key), in hex.</p>
@@ -186,7 +125,7 @@
   <p><b>Challenge/response.</b> Format letter-digit-letter (e.g. A3C), 6,760 possible values. <code>h = HMAC-SHA256(key, "VAUTH1-R|" + label + "|" + CHALLENGE)</code>; <code>n = ((h[0]&lt;&lt;16)|(h[1]&lt;&lt;8)|h[2]) mod 6760</code>; response = letter[n div 260] + digit[(n div 26) mod 10] + letter[n mod 26]. Printed challenges use the same mapping on <code>"VAUTH1-C|" + label + "|" + i</code>, skipping duplicates.</p>
   <p><b>Test vectors.</b> Key = ASCII "12345678901234567890", Card 1: daily codes for days 1–3 = <b>RZ, YB, WT</b>; challenges 1–3 = <b>A6A, W2F, X8O</b>; challenge A3C → <b>I7J</b>. Fingerprint 6ED6.</p>
   <p><b>Strength.</b> A guessed order code has a 1 in 676 chance. A guessed response has a 1 in 6,760 chance. A daily code can be replayed by anyone who overhears it until the day ends, and it comes back on the same day next month on the same card. Struck challenge lines can't be replayed. This catches impersonators and pranksters, not a determined adversary with many attempts, so a failed code on a critical order always means confirm by another path.</p>
-  <p><b>Phone enrollment code.</b> <code>VAUTH1.salt.iterations.iv.ciphertext</code> (base64url). AES-256-GCM, with the key derived by PBKDF2-SHA256 from the passphrase (310,000 iterations, 16-byte random salt). The plaintext is JSON holding the Base32 secret, fingerprint, key version and incident name. A code with an iteration count outside 100,000–2,000,000 is refused.</p>
+  <p><b>Enrollment code</b> (phone app at /card/, far-end printing at /print/). <code>VAUTH1.salt.iterations.iv.ciphertext</code> (base64url). AES-256-GCM, with the key derived by PBKDF2-SHA256 from the passphrase (310,000 iterations, 16-byte random salt). The plaintext is JSON holding the Base32 secret, fingerprint, key version and incident name. A code with an iteration count outside 100,000–2,000,000 is refused.</p>
   <p><b>Operating rules.</b> The custodian announces the card in effect ("Authentication: Card Four") and, across time zones or near midnight, the day. Strike every challenge line after use. If codes fail, first confirm the card and day. Switch to a new card at least monthly, when challenges run low, or when a card may be compromised. Rotate the key if a set of cards is lost.</p>
   </details>
 </section>
@@ -195,6 +134,8 @@
 <script>/*QRLIB*/</script>
 <script>/*CORE*/</script>
 <script>/*ENROLLMENTCODE*/</script>
+<script>/*CARDSHEET*/</script>
+<script>/*ENROLL*/</script>
 <script>/*APP*/</script>
 </body>
 </html>
