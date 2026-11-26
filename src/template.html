@@ -31,11 +31,43 @@
   .result { margin-top:8px; font-weight:600; min-height:1.4em; }
   .result.ok { color:var(--ok); } .result.bad { color:var(--bad); }
   details summary { cursor:pointer; font-weight:600; }
+  button.link { border:0; background:none; color:var(--mute); text-decoration:underline; padding:7px 4px; }
   .spec { font-size:13.5px; } .spec code { background:#eef1f4; padding:1px 4px; border-radius:3px; }
 
   /*CARDSHEETCSS*/
+  /*TUTORIALCSS*/
+
+  /* ---------- setup slides ---------- */
+  header .guide { margin:0 0 0 auto; background:transparent; color:#fff; border-color:#fff8; }
+  .onb { position:fixed; inset:0; z-index:50; background:rgba(22,32,42,.55); display:flex; align-items:center; justify-content:center; padding:16px; }
+  .onb[hidden] { display:none; }
+  .onb-box { background:#fff; width:min(560px,100%); max-height:calc(100vh - 32px); overflow:auto; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.35); padding:22px 24px 18px; position:relative; }
+  .onb-x { position:absolute; top:10px; right:10px; margin:0; border:0; font-size:20px; line-height:1; padding:6px 10px; color:var(--mute); background:none; }
+  .onb-top { display:flex; align-items:center; gap:10px; margin-bottom:6px; min-height:20px; }
+  .onb-dots { display:flex; gap:6px; } .onb-dots i { width:8px; height:8px; border-radius:50%; background:var(--line); }
+  .onb-dots i.done { background:#9aa6b2; } .onb-dots i.on { background:var(--ink); width:20px; border-radius:4px; }
+  .onb-stepno { font-size:12px; color:var(--mute); }
+  .onb-slide h3 { font-size:21px; margin:6px 0 8px; }
+  .onb-slide p { margin:0 0 10px; }
+  .onb-slide ol { margin:0 0 10px; padding-left:22px; } .onb-slide li { margin:3px 0; }
+  .onb-choice { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:6px 0 10px; }
+  .onb-choice button, .onb-choice label { margin:0; padding:12px; text-align:left; border:1px solid var(--line); border-radius:8px; background:#fff; cursor:pointer; font-size:14px; }
+  .onb-choice b { display:block; font-size:15px; margin-bottom:2px; color:var(--ink); }
+  .onb-choice span { color:var(--mute); font-size:13px; }
+  .onb-choice label:has(input:checked) { border:2px solid var(--ink); padding:11px; }
+  .onb-choice input[type=radio] { width:auto; margin:0 6px 0 0; }
+  .onb-status { font-size:14px; background:var(--bg); border-radius:6px; padding:9px 11px; margin-top:6px; }
+  .onb-status .ok { color:var(--ok); font-weight:700; }
+  .onb-fp { text-align:center; margin:8px 0 12px; }
+  .onb-fp b { display:block; font:800 54px/1.1 ui-monospace,Menlo,Consolas,monospace; letter-spacing:.12em; }
+  .onb-fp span { font-weight:700; letter-spacing:.06em; }
+  .onb-nav { display:flex; align-items:center; gap:8px; margin-top:16px; border-top:1px solid var(--line); padding-top:12px; }
+  .onb-nav .spacer { flex:1; }
+  .onb-nav button { margin:0; }
+  .onb-print { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 6px; } .onb-print button { margin:0; }
 
   @media print {
+    #onb { display:none !important; }
     body { background:#fff; }
     header, main > section:not(#cardsPanel), #cardsPanel > :not(#cards) { display:none !important; }
     main { display:block; padding:0; max-width:none; }
@@ -46,6 +78,7 @@
 <body>
 <header>
   <h1>Voice Auth</h1><span class="tag">numbered radio authentication cards · offline · nothing leaves this device</span>
+  <button class="guide" id="btnGuide">Setup guide</button>
 </header>
 <main>
 
@@ -87,6 +120,8 @@
   <p class="note">Cards have no dates or times. A card stays in effect until the custodian announces the next one. Day 21 on Card 4 is always the same code. Switch cards at least monthly, because daily codes repeat each month.</p>
   <button class="primary" id="btnBuild" disabled>Build cards</button>
   <button id="btnPrint" disabled>Print / Save as PDF</button>
+  <button id="btnTutorial">Print tutorial</button>
+  <p class="note">The tutorial is a two-page sheet for card holders (print it double-sided). It uses an example card, never your key.</p>
 </section>
 
 <section class="panel wide" id="cardsPanel">
@@ -110,8 +145,105 @@
 </section>
 </main>
 
+<div id="tutorialPrint"></div>
+
+<div class="onb" id="onb" role="dialog" aria-modal="true" aria-labelledby="onbTitle" hidden>
+  <div class="onb-box">
+    <button class="onb-x" id="onbClose" aria-label="Close setup">✕</button>
+    <div class="onb-top"><div class="onb-dots" id="onbDots"></div><span class="onb-stepno" id="onbStep"></span></div>
+
+    <section class="onb-slide" data-step="welcome">
+      <h3 id="onbTitle">Set up your authentication cards</h3>
+      <p>This tool makes numbered cards that let card holders prove who they are on the radio. Setup takes about five minutes:</p>
+      <ol>
+        <li>Name the incident</li>
+        <li>Make a new key, or load an existing key file</li>
+        <li>Save the key file</li>
+        <li>Note the key's fingerprint</li>
+        <li>Choose your cards</li>
+        <li>Print the cards and the card holder tutorial</li>
+      </ol>
+      <p class="note">Everything stays on this computer. Nothing is sent anywhere, and nothing is kept when you close the page.</p>
+    </section>
+
+    <section class="onb-slide" data-step="incident" hidden>
+      <h3>Name the incident</h3>
+      <p>These print on every card so card holders know which set they hold. All optional.</p>
+      <label>Incident name</label><input id="oIncName" placeholder="e.g. Cedar Creek">
+      <div class="row">
+        <div><label>Incident number</label><input id="oIncNo" placeholder="OR-XXX-000000"></div>
+        <div><label>Key custodian</label><input id="oCust" placeholder="Name / position"></div>
+      </div>
+      <p class="note">The key custodian holds the key, issues cards and announces which card is in effect. Their name also prints on the tutorial.</p>
+    </section>
+
+    <section class="onb-slide" data-step="key" hidden>
+      <h3>Make or load the key</h3>
+      <p>The key is the secret every card is made from. Cards printed from the same key always match.</p>
+      <div class="onb-choice">
+        <button id="oNew"><b>Generate a new key</b><span>Starting fresh for a new incident or team.</span></button>
+        <button id="oImport"><b>Import a key file</b><span>Printing more cards for a key you already use.</span></button>
+      </div>
+      <div class="onb-status" id="oKeyStatus"></div>
+    </section>
+
+    <section class="onb-slide" data-step="save" hidden>
+      <h3>Save the key file</h3>
+      <p>This page keeps nothing when it closes. The key file is the only way to print more cards, or replacement cards, that match the ones you're about to print.</p>
+      <button class="primary" id="oSave">Download key file</button>
+      <div class="onb-status" id="oSaveStatus"></div>
+    </section>
+
+    <section class="onb-slide" data-step="fp" hidden>
+      <h3>Note the fingerprint</h3>
+      <p>The fingerprint is a short check code for this key. It prints on every card.</p>
+      <div class="onb-fp"><b id="oFp"></b><span id="oFpSay"></span></div>
+      <p>Write it down. When you announce the card in effect, announce the fingerprint too, so card holders can check their cards match:
+        <i>“Authentication is Card One, fingerprint …”</i></p>
+    </section>
+
+    <section class="onb-slide" data-step="cards" hidden>
+      <h3>Choose your cards</h3>
+      <div class="onb-choice">
+        <label><input type="radio" name="oSize" value="page"><b>Full page</b><span>One letter page per card, with the phonetic words.</span></label>
+        <label><input type="radio" name="oSize" value="badge"><b>Badge</b><span>Credit-card size, 4 per page. Cut out and fold.</span></label>
+      </div>
+      <div class="row">
+        <div><label>Start at card #</label><input type="number" id="oFrom" min="1" max="9999"></div>
+        <div><label>How many cards</label><select id="oCount"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option><option>20</option><option>30</option></select></div>
+      </div>
+      <div class="row">
+        <div><label>Challenges per card</label><input type="number" id="oNch" min="4" max="100"></div>
+      </div>
+      <p class="note">Each card has 31 daily codes, one per day of the month, plus its challenges. Use a new card at least monthly, or sooner if challenges run low.
+        <span id="oBadgeNote">Badges fit up to 32 challenges.</span></p>
+    </section>
+
+    <section class="onb-slide" data-step="print" hidden>
+      <h3>Print</h3>
+      <p id="oSummary"></p>
+      <div class="onb-print">
+        <button class="primary" id="oPrintCards">Print cards</button>
+        <button id="oPrintTut">Print tutorial</button>
+      </div>
+      <div class="warn" id="oPrintBadge">For badges, set the print scale to <b>100% (Actual size)</b>. Cut on the solid outline and fold on the dashed line.</div>
+      <p class="note">The tutorial is one sheet for card holders: print it double-sided and hand it out with the cards. It shows an example card, never your key.
+        Then announce: <i>“Authentication is Card N, fingerprint …”</i></p>
+    </section>
+
+    <div class="onb-nav">
+      <button id="onbBack">Back</button>
+      <button class="link" id="onbSkip">Skip, I know the tool</button>
+      <span class="spacer"></span>
+      <button class="primary" id="onbNext">Next</button>
+    </div>
+  </div>
+</div>
+
 <script>/*CORE*/</script>
 <script>/*CARDSHEET*/</script>
+<script>/*TUTORIAL*/</script>
 <script>/*APP*/</script>
+<script>/*ONBOARDING*/</script>
 </body>
 </html>

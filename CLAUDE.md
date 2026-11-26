@@ -12,7 +12,7 @@ There is one deliverable, built from `src/` by `build.py`:
 
 | File | What it is |
 |---|---|
-| `voice-auth.html` / `index.html` | **Custodian tool.** Generates the key, exports and imports the key file, and prints cards. It's a single self-contained offline file, and checks itself against test vectors when it opens. `index.html` is the GitHub Pages copy. |
+| `voice-auth.html` / `index.html` | **Custodian tool.** Generates the key, exports and imports the key file, and prints cards and the card holder tutorial. Setup slides guide a first-time key custodian from naming the incident to printing. It's a single self-contained offline file, and checks itself against test vectors when it opens. `index.html` is the GitHub Pages copy. |
 | Printed cards | From the custodian tool, in one of two sizes. **Full page:** one page per card, with phonetics. **Badge:** 85.6 × 54 mm (credit card size), four to a page, with the daily codes on the front and up to 32 challenge/response pairs on the back. Badges are cut on the solid outline and folded on the dashed line, and must be printed at 100% scale. Paper is the only medium (PACE). |
 
 ## Removed at Jon's request: don't bring back without asking
@@ -26,7 +26,8 @@ There is one deliverable, built from `src/` by `build.py`:
 - **Daily codes:** 31 per card, one for each day of the month (Day 01–31). Each is **two letters**, read in NATO phonetics ("SIERRA HOTEL"). Near midnight, or when units are in different time zones, the day announced by the custodian governs. The printed full-page card still calls them "daily order codes".
 - **Challenge/response:** letter-digit-letter format (e.g. A3C → I7J). There are 10 printed challenges per card by default, and each line is struck after use.
 - Keep the terms ATAK, ICS 205 and COML out of the app's UI. Jon wants it standalone and generic. "Key custodian" is the UI term.
-- Domain terms (key, fingerprint, card, daily code, challenge, response) are defined in `CONTEXT.md`. Use them as written there.
+- Domain terms (key custodian, card holder, key, fingerprint, card, card in effect, rotate, daily code, challenge, response) are defined in `CONTEXT.md`. Use them as written there: say **card holder**, not operator or station.
+- **Card holder rule (in the tutorial):** daily codes for routine traffic; **always challenge** before acting on an unusual, critical or life-safety order, or whenever something seems wrong. Card holders check their card's fingerprint against the one the key custodian announces.
 
 ## Algorithm (see the spec in the app, section 4, and `tests/test.js`)
 
@@ -43,13 +44,15 @@ There is one deliverable, built from `src/` by `build.py`:
   - `VA.card(key, no)` returns `{ no, dailyCode(day), dailyCodes(), challenges(n), respond(challenge) }`.
   - `VA.selfTest()` returns `{ ok, failed }` and checks the fixed test vectors.
 - `src/cardsheet.js` + `src/cardsheet.css`: the printed cards (full page and badge) and their print styles. `CardSheet.html(key, options)` returns `{ html, note }`.
-- `src/app.js` + `src/template.html`: the custodian tool (key, key file, card settings, preview, self-test and spec).
-- `tests/test.js`: hashes against Node's crypto, the self-test, and the printed-card fixture and card properties. `tests/cardsheet.test.js`: printed card contents in both sizes, and escaping of incident and custodian text.
+- `src/app.js` + `src/template.html`: the custodian tool (key, key file, card settings, preview, self-test and spec). `app.js` exposes `window.VAApp` for the setup slides.
+- `src/onboarding.js`: the setup slides (welcome, incident, key, save key file, fingerprint, cards, print). They open on start unless "Skip, I know the tool" was chosen on that computer (localStorage `voiceauth.skipSetup`); **Setup guide** reopens them. A new key can't get past the save step until the key file is downloaded; an imported key skips that step.
+- `src/tutorial.js` + `src/tutorial.css`: the two-page card holder tutorial (print double-sided). `Tutorial.html({ size, custodian })`. Its example card is **always built from the published test key** and stamped EXAMPLE CARD — NOT VALID; never pass it a real key. It prints as its own job (`body.print-tutorial`).
+- `tests/test.js`: hashes against Node's crypto, the self-test, and the printed-card fixture and card properties. `tests/cardsheet.test.js`: printed card contents in both sizes, and escaping of incident and custodian text. `tests/tutorial.test.js`: the tutorial's example matches the test-key card, both sizes, the rules it must state, escaping, and that it avoids glossary-banned words.
 - `CONTEXT.md`: the glossary of domain terms.
 
 ## Rules
 
-- **Build and test before every commit:** `python3 build.py && node tests/test.js && node tests/cardsheet.test.js`. Commit the built files too, because GitHub Pages serves them from `main`.
+- **Build and test before every commit:** `python3 build.py && node tests/test.js && node tests/cardsheet.test.js && node tests/tutorial.test.js`. Commit the built files too, because GitHub Pages serves them from `main`.
 - Pages must stay **self-contained and offline**: inline scripts only and no CDNs. Keep the strict CSP meta tag (`connect-src 'none'`). If the CSP blocks something, fix the code, not the policy.
 - **Never commit key files.** `*.json` is git-ignored on purpose. The repo is **public**.
 - To check behavior, test in a real browser (e.g. Playwright against `python3 -m http.server`). For printing, check the badge size (85.6 × 53.98 mm) and print to PDF.

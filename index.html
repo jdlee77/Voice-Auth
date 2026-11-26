@@ -31,6 +31,7 @@
   .result { margin-top:8px; font-weight:600; min-height:1.4em; }
   .result.ok { color:var(--ok); } .result.bad { color:var(--bad); }
   details summary { cursor:pointer; font-weight:600; }
+  button.link { border:0; background:none; color:var(--mute); text-decoration:underline; padding:7px 4px; }
   .spec { font-size:13.5px; } .spec code { background:#eef1f4; padding:1px 4px; border-radius:3px; }
 
   /* ===== Voice Auth card sheet styles: printed cards, full page and badge size ===== */
@@ -89,8 +90,72 @@
     .badge-pair:nth-child(4n) { page-break-after:always; break-after:page; }
   }
 
+  /* ===== Voice Auth tutorial styles: the two-page card holder tutorial (printed only) ===== */
+  #tutorialPrint { display:none; }
+  .tut-page { width:7.7in; margin:0 auto; color:#000; background:#fff; font:9.5pt/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .tut-page + .tut-page { break-before:page; page-break-before:always; }
+  .tut-hd { display:flex; justify-content:space-between; align-items:baseline; gap:12px; border-bottom:2px solid #000; padding-bottom:4px; margin-bottom:7px; }
+  .tut-hd h1 { font-size:16pt; margin:0; }
+  .tut-hd span { font-size:8.5pt; color:#333; text-align:right; }
+  .tut-page h2 { font-size:10pt; margin:7px 0 2px; }
+  .tut-page p { margin:0 0 3px; }
+  .tut-lead { font-size:10pt; }
+  .tut-small { font-size:8.5pt; color:#222; }
+  .tut-example { position:relative; margin:6px auto 3px; width:max-content; max-width:100%; }
+  .tut-example.page .tut-scale { zoom:.56; }
+  .tut-example .card { page-break-after:auto !important; break-after:auto !important; }
+  .tut-example .badge-pair { margin:0 !important; }
+  .tut-stamp { position:absolute; inset:0; z-index:2; display:flex; align-items:center; justify-content:center; pointer-events:none;
+               font:800 19pt system-ui,sans-serif; letter-spacing:.05em; color:rgba(179,38,30,.55); transform:rotate(-10deg); white-space:nowrap; }
+  .tut-cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .tut-ex { border:1px solid #000; border-radius:4px; padding:5px 10px 6px; margin-bottom:7px; }
+  .tut-ex h2 { margin-top:0; }
+  .tut-line { margin:2px 0; }
+  .tut-note { display:block; margin-left:16px; font-size:8.5pt; font-style:italic; color:#333; }
+  .tut-rules ul { margin:2px 0 6px 18px; padding:0; }
+  .tut-rules li { margin:2px 0; }
+  .tut-contact { display:grid; grid-template-columns:1fr 1fr; gap:16px; border:2px solid #000; padding:7px 10px 9px; margin:6px 0 8px; }
+  .tut-contact b { display:block; font-size:7.5pt; text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px; }
+  .tut-blank { display:block; height:16px; border-bottom:1px solid #000; }
+  .tut-nato { display:grid; grid-template-columns:repeat(6,1fr); gap:1px 8px; font-size:7.5pt; border-top:1px solid #000; padding-top:4px; }
 
   @media print {
+    body.print-tutorial > header, body.print-tutorial > main { display:none !important; }
+    body.print-tutorial #tutorialPrint { display:block !important; }
+  }
+
+
+  /* ---------- setup slides ---------- */
+  header .guide { margin:0 0 0 auto; background:transparent; color:#fff; border-color:#fff8; }
+  .onb { position:fixed; inset:0; z-index:50; background:rgba(22,32,42,.55); display:flex; align-items:center; justify-content:center; padding:16px; }
+  .onb[hidden] { display:none; }
+  .onb-box { background:#fff; width:min(560px,100%); max-height:calc(100vh - 32px); overflow:auto; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.35); padding:22px 24px 18px; position:relative; }
+  .onb-x { position:absolute; top:10px; right:10px; margin:0; border:0; font-size:20px; line-height:1; padding:6px 10px; color:var(--mute); background:none; }
+  .onb-top { display:flex; align-items:center; gap:10px; margin-bottom:6px; min-height:20px; }
+  .onb-dots { display:flex; gap:6px; } .onb-dots i { width:8px; height:8px; border-radius:50%; background:var(--line); }
+  .onb-dots i.done { background:#9aa6b2; } .onb-dots i.on { background:var(--ink); width:20px; border-radius:4px; }
+  .onb-stepno { font-size:12px; color:var(--mute); }
+  .onb-slide h3 { font-size:21px; margin:6px 0 8px; }
+  .onb-slide p { margin:0 0 10px; }
+  .onb-slide ol { margin:0 0 10px; padding-left:22px; } .onb-slide li { margin:3px 0; }
+  .onb-choice { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:6px 0 10px; }
+  .onb-choice button, .onb-choice label { margin:0; padding:12px; text-align:left; border:1px solid var(--line); border-radius:8px; background:#fff; cursor:pointer; font-size:14px; }
+  .onb-choice b { display:block; font-size:15px; margin-bottom:2px; color:var(--ink); }
+  .onb-choice span { color:var(--mute); font-size:13px; }
+  .onb-choice label:has(input:checked) { border:2px solid var(--ink); padding:11px; }
+  .onb-choice input[type=radio] { width:auto; margin:0 6px 0 0; }
+  .onb-status { font-size:14px; background:var(--bg); border-radius:6px; padding:9px 11px; margin-top:6px; }
+  .onb-status .ok { color:var(--ok); font-weight:700; }
+  .onb-fp { text-align:center; margin:8px 0 12px; }
+  .onb-fp b { display:block; font:800 54px/1.1 ui-monospace,Menlo,Consolas,monospace; letter-spacing:.12em; }
+  .onb-fp span { font-weight:700; letter-spacing:.06em; }
+  .onb-nav { display:flex; align-items:center; gap:8px; margin-top:16px; border-top:1px solid var(--line); padding-top:12px; }
+  .onb-nav .spacer { flex:1; }
+  .onb-nav button { margin:0; }
+  .onb-print { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 6px; } .onb-print button { margin:0; }
+
+  @media print {
+    #onb { display:none !important; }
     body { background:#fff; }
     header, main > section:not(#cardsPanel), #cardsPanel > :not(#cards) { display:none !important; }
     main { display:block; padding:0; max-width:none; }
@@ -101,6 +166,7 @@
 <body>
 <header>
   <h1>Voice Auth</h1><span class="tag">numbered radio authentication cards · offline · nothing leaves this device</span>
+  <button class="guide" id="btnGuide">Setup guide</button>
 </header>
 <main>
 
@@ -142,6 +208,8 @@
   <p class="note">Cards have no dates or times. A card stays in effect until the custodian announces the next one. Day 21 on Card 4 is always the same code. Switch cards at least monthly, because daily codes repeat each month.</p>
   <button class="primary" id="btnBuild" disabled>Build cards</button>
   <button id="btnPrint" disabled>Print / Save as PDF</button>
+  <button id="btnTutorial">Print tutorial</button>
+  <p class="note">The tutorial is a two-page sheet for card holders (print it double-sided). It uses an example card, never your key.</p>
 </section>
 
 <section class="panel wide" id="cardsPanel">
@@ -164,6 +232,101 @@
   </details>
 </section>
 </main>
+
+<div id="tutorialPrint"></div>
+
+<div class="onb" id="onb" role="dialog" aria-modal="true" aria-labelledby="onbTitle" hidden>
+  <div class="onb-box">
+    <button class="onb-x" id="onbClose" aria-label="Close setup">✕</button>
+    <div class="onb-top"><div class="onb-dots" id="onbDots"></div><span class="onb-stepno" id="onbStep"></span></div>
+
+    <section class="onb-slide" data-step="welcome">
+      <h3 id="onbTitle">Set up your authentication cards</h3>
+      <p>This tool makes numbered cards that let card holders prove who they are on the radio. Setup takes about five minutes:</p>
+      <ol>
+        <li>Name the incident</li>
+        <li>Make a new key, or load an existing key file</li>
+        <li>Save the key file</li>
+        <li>Note the key's fingerprint</li>
+        <li>Choose your cards</li>
+        <li>Print the cards and the card holder tutorial</li>
+      </ol>
+      <p class="note">Everything stays on this computer. Nothing is sent anywhere, and nothing is kept when you close the page.</p>
+    </section>
+
+    <section class="onb-slide" data-step="incident" hidden>
+      <h3>Name the incident</h3>
+      <p>These print on every card so card holders know which set they hold. All optional.</p>
+      <label>Incident name</label><input id="oIncName" placeholder="e.g. Cedar Creek">
+      <div class="row">
+        <div><label>Incident number</label><input id="oIncNo" placeholder="OR-XXX-000000"></div>
+        <div><label>Key custodian</label><input id="oCust" placeholder="Name / position"></div>
+      </div>
+      <p class="note">The key custodian holds the key, issues cards and announces which card is in effect. Their name also prints on the tutorial.</p>
+    </section>
+
+    <section class="onb-slide" data-step="key" hidden>
+      <h3>Make or load the key</h3>
+      <p>The key is the secret every card is made from. Cards printed from the same key always match.</p>
+      <div class="onb-choice">
+        <button id="oNew"><b>Generate a new key</b><span>Starting fresh for a new incident or team.</span></button>
+        <button id="oImport"><b>Import a key file</b><span>Printing more cards for a key you already use.</span></button>
+      </div>
+      <div class="onb-status" id="oKeyStatus"></div>
+    </section>
+
+    <section class="onb-slide" data-step="save" hidden>
+      <h3>Save the key file</h3>
+      <p>This page keeps nothing when it closes. The key file is the only way to print more cards, or replacement cards, that match the ones you're about to print.</p>
+      <button class="primary" id="oSave">Download key file</button>
+      <div class="onb-status" id="oSaveStatus"></div>
+    </section>
+
+    <section class="onb-slide" data-step="fp" hidden>
+      <h3>Note the fingerprint</h3>
+      <p>The fingerprint is a short check code for this key. It prints on every card.</p>
+      <div class="onb-fp"><b id="oFp"></b><span id="oFpSay"></span></div>
+      <p>Write it down. When you announce the card in effect, announce the fingerprint too, so card holders can check their cards match:
+        <i>“Authentication is Card One, fingerprint …”</i></p>
+    </section>
+
+    <section class="onb-slide" data-step="cards" hidden>
+      <h3>Choose your cards</h3>
+      <div class="onb-choice">
+        <label><input type="radio" name="oSize" value="page"><b>Full page</b><span>One letter page per card, with the phonetic words.</span></label>
+        <label><input type="radio" name="oSize" value="badge"><b>Badge</b><span>Credit-card size, 4 per page. Cut out and fold.</span></label>
+      </div>
+      <div class="row">
+        <div><label>Start at card #</label><input type="number" id="oFrom" min="1" max="9999"></div>
+        <div><label>How many cards</label><select id="oCount"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option><option>20</option><option>30</option></select></div>
+      </div>
+      <div class="row">
+        <div><label>Challenges per card</label><input type="number" id="oNch" min="4" max="100"></div>
+      </div>
+      <p class="note">Each card has 31 daily codes, one per day of the month, plus its challenges. Use a new card at least monthly, or sooner if challenges run low.
+        <span id="oBadgeNote">Badges fit up to 32 challenges.</span></p>
+    </section>
+
+    <section class="onb-slide" data-step="print" hidden>
+      <h3>Print</h3>
+      <p id="oSummary"></p>
+      <div class="onb-print">
+        <button class="primary" id="oPrintCards">Print cards</button>
+        <button id="oPrintTut">Print tutorial</button>
+      </div>
+      <div class="warn" id="oPrintBadge">For badges, set the print scale to <b>100% (Actual size)</b>. Cut on the solid outline and fold on the dashed line.</div>
+      <p class="note">The tutorial is one sheet for card holders: print it double-sided and hand it out with the cards. It shows an example card, never your key.
+        Then announce: <i>“Authentication is Card N, fingerprint …”</i></p>
+    </section>
+
+    <div class="onb-nav">
+      <button id="onbBack">Back</button>
+      <button class="link" id="onbSkip">Skip, I know the tool</button>
+      <span class="spacer"></span>
+      <button class="primary" id="onbNext">Next</button>
+    </div>
+  </div>
+</div>
 
 <script>// ===== Voice Auth core: pure JS, no network, no dependencies =====
 const VA = (() => {
@@ -329,7 +492,7 @@ if (typeof module !== 'undefined') module.exports = VA;
 // CardSheet.html(key, { from, count, challenges, size: 'page' | 'badge', version, fingerprint, incident, incidentNo, custodian })
 //   -> { html, note }   html goes in #cards; note says what was built and how to print it. Styles: cardsheet.css.
 // Full page: one page per card, with phonetics. Badge: 85.6 x 54 mm (ISO/IEC 7810 ID-1), front = all 31 daily codes,
-// back = up to BADGE_MAX challenge/response pairs; no phonetics (they don't fit, and operators read NATO phonetics anyway).
+// back = up to BADGE_MAX challenge/response pairs; no phonetics (they don't fit, and card holders read NATO phonetics anyway).
 const CardSheet = (() => {
   const core = typeof VA !== 'undefined' ? VA : require('./core.js');
   const BADGE_MAX = 32;
@@ -395,9 +558,133 @@ const CardSheet = (() => {
 })();
 if (typeof module !== 'undefined') module.exports = CardSheet;
 </script>
+<script>// ===== Voice Auth tutorial: the printed sheet that teaches card holders how the cards work =====
+// Tutorial.html({ size: 'page' | 'badge', custodian }) -> html for two pages (front: how your card works; back: on the radio).
+// It never uses the real key: the example card is built from the published test key and stamped EXAMPLE — NOT VALID.
+// Styles: tutorial.css. Words follow CONTEXT.md (card holder, key custodian, card in effect, daily code, challenge, response).
+const Tutorial = (() => {
+  const core = typeof VA !== 'undefined' ? VA : require('./core.js');
+  const sheet = typeof CardSheet !== 'undefined' ? CardSheet : require('./cardsheet.js');
+  const EXAMPLE_KEY = core.enc('12345678901234567890');   // published test key (see the spec): never a real key
+  const EXAMPLE_CARD = 4, EXAMPLE_DAY = 21;
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const NUM = ['ZERO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE'];
+  const sayNo = (n) => String(n).split('').map((d) => NUM[+d]).join(' ');
+
+  // Everything the examples quote, taken from the example card so the sheet always agrees with itself.
+  function example() {
+    const card = core.card(EXAMPLE_KEY, EXAMPLE_CARD);
+    const [ch1, ch2] = card.challenges(2);
+    return {
+      fp: core.fingerprint(EXAMPLE_KEY), no: EXAMPLE_CARD, day: EXAMPLE_DAY, daily: card.dailyCode(EXAMPLE_DAY),
+      ch1, r1: card.respond(ch1).response, ch2, r2: card.respond(ch2).response,
+    };
+  }
+
+  function exampleCard(size, fp) {
+    const { html } = sheet.html(EXAMPLE_KEY, { from: EXAMPLE_CARD, count: 1, challenges: 10, size, version: 1, fingerprint: fp,
+      incident: 'EXAMPLE', incidentNo: '', custodian: 'Example custodian' });
+    return `<div class="tut-example ${size}"><div class="tut-stamp">EXAMPLE CARD — NOT VALID</div><div class="tut-scale">${html}</div></div>`;
+  }
+
+  const say = (who, words, note = '') =>
+    `<div class="tut-line"><b>${who}:</b> “${words}”${note ? `<span class="tut-note">${note}</span>` : ''}</div>`;
+
+  function html(o = {}) {
+    const size = o.size === 'badge' ? 'badge' : 'page';
+    const e = example(), P = core.phon;
+    const cust = o.custodian ? esc(o.custodian) : '<span class="tut-blank"></span>';
+    const where = size === 'badge'
+      ? 'Front: card number, fingerprint (FP) and the 31 daily codes. Back: the challenges and their responses.'
+      : 'Top: card number, fingerprint (FP) and key custodian. Then the 31 daily codes, then the challenges and their responses.';
+
+    const front = `<section class="tut-page">
+      <div class="tut-hd"><h1>Voice Auth · How your card works</h1><span>For card holders · keep with your card</span></div>
+      <p class="tut-lead">Your card lets you prove on the radio that you are who you say you are, and check that others are too.
+        Anyone can say they're Command. Only someone holding the card in effect can give the right code.</p>
+      ${exampleCard(size, e.fp)}
+      <p class="tut-small">${where}</p>
+      <div class="tut-cols">
+        <div>
+          <h2>1 · Use only the card in effect</h2>
+          <p>The key custodian announces which card to use: <i>“Authentication is Card ${sayNo(e.no)}.”</i>
+            That card stays in effect until a new card is announced. Cards have no dates or times on them.</p>
+          <h2>2 · Check the fingerprint</h2>
+          <p>Every card shows a fingerprint, such as <b>FP ${e.fp}</b>. When you receive a card, and whenever a new card is announced,
+            check that it matches the fingerprint the key custodian announces (<i>“fingerprint ${P(e.fp)}”</i>).
+            <b>If it doesn't match, don't use the card.</b> Tell the key custodian.</p>
+          <h2>3 · Daily code: routine traffic</h2>
+          <p>Find today's day of the month on your card. On day ${e.day} of the example card the daily code is
+            <b>${e.daily}</b>, said <i>“Authentication ${P(e.daily)}.”</i> The receiving card holder checks it against the same day on their card.
+            Near midnight, or when card holders are in different time zones, use the day the key custodian announces.</p>
+        </div>
+        <div>
+          <h2>4 · Challenge and response: prove it now</h2>
+          <p>To make someone prove they hold the card, pick an <b>unused</b> challenge from your card and send it:
+            <i>“Authenticate ${P(e.ch1)}.”</i> They find ${e.ch1} on their card and answer with its response,
+            <i>“${P(e.r1)}.”</i> If it matches your card (${e.ch1} → <b>${e.r1}</b>), they're authenticated.
+            <b>Both of you strike that line.</b> A struck challenge is never used again, so a recording of it is useless.</p>
+          <h2>5 · When you must challenge</h2>
+          <p>A daily code can be overheard and repeated for the rest of the day. So <b>always challenge before acting on an order that is
+            unusual, critical or life-safety</b> (an evacuation, moving a resource, shutting down a channel), or whenever the voice
+            or the situation seems wrong.</p>
+          <h2>6 · Wrong or no answer = NOT authenticated</h2>
+          <p>Don't act on it. First confirm you're both on the same card (and day), then confirm by another path. See the back.</p>
+        </div>
+      </div>
+    </section>`;
+
+    const back = `<section class="tut-page">
+      <div class="tut-hd"><h1>Voice Auth · On the radio</h1><span>Example card ${e.no}, day ${e.day} · not valid</span></div>
+      <div class="tut-ex">
+        <h2>A · Routine order with the daily code</h2>
+        ${say('Command', `Engine 42, Command. Move to Staging Area 2. Authentication ${P(e.daily)}.`)}
+        ${say('Engine 42', 'Command, Engine 42. Copy Staging Area 2, authentication good.', `Checked day ${e.day} on card ${e.no}: ${e.daily}. It matches.`)}
+      </div>
+      <div class="tut-ex">
+        <h2>B · Unusual order: challenge first</h2>
+        ${say('Caller', 'Medic 7, this is Command. Shut down and leave the scene immediately.')}
+        ${say('Medic 7', `Command, Medic 7. Authenticate ${P(e.ch2)}.`, 'An unusual, life-safety order, so Medic 7 challenges before acting.')}
+        ${say('Caller', P(e.r2), `Finds ${e.ch2} on card ${e.no}. The response is ${e.r2}.`)}
+        ${say('Medic 7', 'Authentication good. Leaving the scene.', `Both strike the ${e.ch2} line.`)}
+      </div>
+      <div class="tut-ex">
+        <h2>C · When it fails</h2>
+        ${say('Medic 7', `Authenticate ${P(e.ch1)}.`)}
+        ${say('Caller', 'MIKE TWO BRAVO.', `Wrong: card ${e.no} says ${e.ch1} → ${e.r1}.`)}
+        ${say('Medic 7', `Authentication failed. Confirm you are on Card ${sayNo(e.no)}.`)}
+        <p class="tut-small">If the caller was on the wrong card, they change to the card in effect and you challenge again with a <b>new</b> line.
+          If there's still no correct answer, <b>do not act</b>: confirm through another path (a known supervisor, a phone call, in person)
+          and report a possible impostor to the key custodian.</p>
+      </div>
+      <div class="tut-rules">
+        <h2>Rules</h2>
+        <ul>
+          <li><b>Lost or exposed card:</b> tell the key custodian at once. They will announce a new card or replace the key.</li>
+          <li><b>Never reuse</b> a struck challenge. Running low on challenges? Tell the key custodian.</li>
+          <li><b>Protect the card:</b> keep it on you. Don't photograph, copy or share it, and don't read it out except to authenticate.</li>
+          <li><b>Destroy cards</b> (shred or burn) when the key custodian says they're no longer needed.</li>
+        </ul>
+      </div>
+      <div class="tut-contact">
+        <div><b>Key custodian</b>${cust}</div>
+        <div><b>How to reach</b><span class="tut-blank"></span></div>
+      </div>
+      <div class="tut-nato">${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c) => `<span><b>${c}</b> ${P(c)}</span>`).join('')}</div>
+    </section>`;
+
+    return front + back;
+  }
+
+  return { html, example };
+})();
+if (typeof module !== 'undefined') module.exports = Tutorial;
+</script>
 <script>(() => {
   const $ = (id) => document.getElementById(id);
-  const S = { key: null, secret: '', version: 0, created: '', exported: true, cards: null };
+  const S = { key: null, secret: '', version: 0, created: '', exported: true, cards: null, source: '' };
+  const listeners = [];
+  const notify = () => listeners.forEach((fn) => fn());
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const when = (iso) => iso ? new Date(iso).toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
   const intIn = (id, lo, hi) => Math.min(hi, Math.max(lo, Math.floor(+$(id).value || lo)));
@@ -410,6 +697,7 @@ if (typeof module !== 'undefined') module.exports = CardSheet;
     renderKeyInfo(); clearCards();
   }
   function renderKeyInfo() {
+    setTimeout(notify, 0);
     $('keyInfo').innerHTML = S.key
       ? `<dt>Fingerprint</dt><dd class="mono"><b>${VA.fingerprint(S.key)}</b> (read aloud to confirm everyone has the same key)</dd>
          <dt>Version</dt><dd>v${S.version}${S.exported ? '' : ' · <span style="color:var(--bad)">not exported</span>'}</dd>
@@ -418,7 +706,7 @@ if (typeof module !== 'undefined') module.exports = CardSheet;
   }
   function newKey(version) {
     const b = new Uint8Array(20); crypto.getRandomValues(b);
-    S.exported = false; setKey(b, version, new Date().toISOString());
+    S.exported = false; S.source = 'new'; setKey(b, version, new Date().toISOString());
   }
   $('btnNew').onclick = () => {
     if (S.key && !confirm('Replace the loaded key? Cards printed with it will no longer match this tool.')) return;
@@ -459,7 +747,7 @@ if (typeof module !== 'undefined') module.exports = CardSheet;
         if (d.fingerprint && d.fingerprint !== VA.fingerprint(bytes)) throw new Error('Fingerprint mismatch: file is damaged');
         $('incName').value = d.incident || ''; $('incNo').value = d.incidentNo || ''; $('custodian').value = d.custodian || '';
         if (d.challengesPerCard) $('nCh').value = String(d.challengesPerCard);
-        S.exported = true; setKey(bytes, d.version || 1, d.created || '');
+        S.exported = true; S.source = 'import'; setKey(bytes, d.version || 1, d.created || '');
       } catch (err) { alert('Could not import key: ' + err.message); }
       e.target.value = '';
     };
@@ -479,7 +767,28 @@ if (typeof module !== 'undefined') module.exports = CardSheet;
     $('cards').innerHTML = html; S.cards = true; $('btnPrint').disabled = false;
     $('cardsNote').textContent = note;
   };
-  $('btnPrint').onclick = () => window.print();
+  // Printing: cards and the tutorial are separate print jobs. body.print-tutorial switches the print view to the tutorial.
+  function printCards() {
+    if (!S.cards) $('btnBuild').click();
+    document.body.classList.remove('print-tutorial');
+    window.print();
+  }
+  function printTutorial() {
+    $('tutorialPrint').innerHTML = Tutorial.html({ size: $('cardSize').value, custodian: $('custodian').value });
+    document.body.classList.add('print-tutorial');
+    window.addEventListener('afterprint', () => document.body.classList.remove('print-tutorial'), { once: true });
+    window.print();
+  }
+  $('btnPrint').onclick = printCards;
+  $('btnTutorial').onclick = printTutorial;
+
+  // For the setup slides (onboarding.js): read state, run the same actions as the main screen, hear about key changes.
+  window.VAApp = {
+    hasKey: () => !!S.key, exported: () => S.exported, source: () => S.source,
+    fingerprint: () => (S.key ? VA.fingerprint(S.key) : ''), version: () => S.version,
+    newKey: () => $('btnNew').click(), importKey: () => $('btnImport').click(), exportKey: () => $('btnExport').click(),
+    printCards, printTutorial, onChange: (fn) => listeners.push(fn),
+  };
 
   // ---------- self-test ----------
   (() => {
@@ -488,6 +797,98 @@ if (typeof module !== 'undefined') module.exports = CardSheet;
     el.textContent = ok ? '✔ Self-test passed: SHA-256, RFC 4231 HMAC-SHA256, Base32 and Voice Auth test vectors match.'
       : '✘ SELF-TEST FAILED. Do not use this copy. Failed: ' + failed.join(', ');
   })();
+})();
+</script>
+<script>// ===== Voice Auth setup slides: a guided first-time setup for the key custodian =====
+// Each slide is a real step: it fills the main screen's fields and runs its buttons (through window.VAApp in app.js),
+// so when the last slide is done the cards are ready to print. Opens on start unless the custodian chose
+// "Skip, I know the tool" on this computer (remembered in localStorage); the Setup guide button reopens it.
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const SKIP_KEY = 'voiceauth.skipSetup';
+  const remembered = {
+    get: () => { try { return localStorage.getItem(SKIP_KEY) === '1'; } catch (e) { return false; } },
+    set: () => { try { localStorage.setItem(SKIP_KEY, '1'); } catch (e) { /* storage blocked: just don't remember */ } },
+  };
+  const STEPS = ['welcome', 'incident', 'key', 'save', 'fp', 'cards', 'print'];
+  let at = 0;
+
+  // The save step only applies to a newly generated key; an imported key already has its key file.
+  const steps = () => STEPS.filter((s) => s !== 'save' || VAApp.source() !== 'import');
+  const step = () => steps()[Math.min(at, steps().length - 1)];
+
+  // Fields on the slides mirror fields on the main screen.
+  const MIRROR = { oIncName: 'incName', oIncNo: 'incNo', oCust: 'custodian', oFrom: 'fromCard', oCount: 'cardCount', oNch: 'nCh' };
+  function pullFields() {
+    Object.entries(MIRROR).forEach(([o, m]) => { $(o).value = $(m).value; });
+    document.querySelectorAll('input[name="oSize"]').forEach((r) => { r.checked = r.value === $('cardSize').value; });
+  }
+  const push = (mainId, value) => { $(mainId).value = value; $(mainId).dispatchEvent(new Event('change')); };
+  Object.entries(MIRROR).forEach(([o, m]) => $(o).addEventListener('input', () => { push(m, $(o).value); render(); }));
+  document.querySelectorAll('input[name="oSize"]').forEach((r) => r.addEventListener('change', () => { push('cardSize', r.value); render(); }));
+
+  function canNext(s) {
+    if (s === 'key') return VAApp.hasKey();
+    if (s === 'save') return VAApp.exported();
+    return true;
+  }
+
+  function render() {
+    const list = steps(), s = step(), badge = $('cardSize').value === 'badge';
+    at = list.indexOf(s);
+    document.querySelectorAll('.onb-slide').forEach((el) => { el.hidden = el.dataset.step !== s; });
+    $('onbDots').innerHTML = list.map((x, i) => `<i class="${i === at ? 'on' : i < at ? 'done' : ''}"></i>`).join('');
+    $('onbStep').textContent = at === 0 ? '' : `Step ${at} of ${list.length - 1}`;
+    $('onbBack').hidden = at === 0;
+    $('onbSkip').hidden = at !== 0;
+    $('onbNext').textContent = at === 0 ? 'Start setup' : s === 'print' ? 'Finish' : 'Next';
+    $('onbNext').disabled = !canNext(s);
+
+    const fp = VAApp.fingerprint();
+    $('oKeyStatus').innerHTML = VAApp.hasKey()
+      ? `<span class="ok">✔ Key loaded</span> (${VAApp.source() === 'import' ? 'imported from a key file' : 'new key'}, version ${VAApp.version()}, fingerprint <b>${fp}</b>)`
+      : 'No key yet. Choose one of the options above.';
+    $('oSaveStatus').innerHTML = VAApp.exported()
+      ? '<span class="ok">✔ Key file saved.</span> Keep it with the key custodian: an encrypted USB drive, never email.'
+      : 'You can\'t continue until the key file is saved. Without it, these cards can never be reprinted.';
+    $('oFp').textContent = fp || '----';
+    $('oFpSay').textContent = fp ? VA.phon(fp) : '';
+    $('oBadgeNote').hidden = !badge;
+    $('oPrintBadge').hidden = !badge;
+    const from = +$('fromCard').value || 1, n = +$('cardCount').value || 1;
+    $('oSummary').innerHTML = `<b>${n === 1 ? 'Card ' + from : `Cards ${from}–${from + n - 1}`}</b>, ${badge ? 'badge size (4 per page)' : 'full page'},
+      ${$('nCh').value} challenges each${badge && +$('nCh').value > 32 ? ' (badges fit the first 32)' : ''}. Key fingerprint <b>${fp}</b>.`;
+  }
+
+  function go(delta) {
+    const list = steps();
+    if (delta > 0 && !canNext(step())) return;
+    if (delta > 0 && step() === 'print') return close();
+    at = Math.max(0, Math.min(list.length - 1, at + delta));
+    render();
+    const first = document.querySelector(`.onb-slide[data-step="${step()}"] input, .onb-slide[data-step="${step()}"] button`);
+    if (first) first.focus();
+  }
+  function open() { pullFields(); at = 0; $('onb').hidden = false; render(); $('onbNext').focus(); }
+  function close() { $('onb').hidden = true; }
+
+  $('onbNext').onclick = () => go(1);
+  $('onbBack').onclick = () => go(-1);
+  $('onbSkip').onclick = () => { remembered.set(); close(); };
+  $('onbClose').onclick = close;
+  $('btnGuide').onclick = open;
+  $('onb').addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+
+  $('oNew').onclick = () => VAApp.newKey();
+  $('oImport').onclick = () => VAApp.importKey();
+  $('oSave').onclick = () => VAApp.exportKey();
+  $('oPrintCards').onclick = () => VAApp.printCards();
+  $('oPrintTut').onclick = () => VAApp.printTutorial();
+
+  // A key change (new, imported, saved) may fill fields from the key file and changes which steps apply.
+  VAApp.onChange(() => { if (!$('onb').hidden) { pullFields(); render(); } });
+
+  if (!remembered.get()) open();
 })();
 </script>
 </body>
