@@ -1,0 +1,33 @@
+/* ===== Voice Auth tutorial styles: the two-page card holder tutorial (printed only) ===== */
+  #tutorialPrint { display:none; }
+  .tut-page { width:7.7in; margin:0 auto; color:#000; background:#fff; font:9.5pt/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .tut-page + .tut-page { break-before:page; page-break-before:always; }
+  .tut-hd { display:flex; justify-content:space-between; align-items:baseline; gap:12px; border-bottom:2px solid #000; padding-bottom:4px; margin-bottom:7px; }
+  .tut-hd h1 { font-size:16pt; margin:0; }
+  .tut-hd span { font-size:8.5pt; color:#333; text-align:right; }
+  .tut-page h2 { font-size:10pt; margin:7px 0 2px; }
+  .tut-page p { margin:0 0 3px; }
+  .tut-lead { font-size:10pt; }
+  .tut-small { font-size:8.5pt; color:#222; }
+  .tut-example { position:relative; margin:6px auto 3px; width:max-content; max-width:100%; }
+  .tut-example.page .tut-scale { zoom:.56; }
+  .tut-example .card { page-break-after:auto !important; break-after:auto !important; }
+  .tut-example .badge-pair { margin:0 !important; }
+  .tut-stamp { position:absolute; inset:0; z-index:2; display:flex; align-items:center; justify-content:center; pointer-events:none;
+               font:800 19pt system-ui,sans-serif; letter-spacing:.05em; color:rgba(179,38,30,.55); transform:rotate(-10deg); white-space:nowrap; }
+  .tut-cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .tut-ex { border:1px solid #000; border-radius:4px; padding:5px 10px 6px; margin-bottom:7px; }
+  .tut-ex h2 { margin-top:0; }
+  .tut-line { margin:2px 0; }
+  .tut-note { display:block; margin-left:16px; font-size:8.5pt; font-style:italic; color:#333; }
+  .tut-rules ul { margin:2px 0 6px 18px; padding:0; }
+  .tut-rules li { margin:2px 0; }
+  .tut-contact { display:grid; grid-template-columns:1fr 1fr; gap:16px; border:2px solid #000; padding:7px 10px 9px; margin:6px 0 8px; }
+  .tut-contact b { display:block; font-size:7.5pt; text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px; }
+  .tut-blank { display:block; height:16px; border-bottom:1px solid #000; }
+  .tut-nato { display:grid; grid-template-columns:repeat(6,1fr); gap:1px 8px; font-size:7.5pt; border-top:1px solid #000; padding-top:4px; }
+
+  @media print {
+    body.print-tutorial > header, body.print-tutorial > main { display:none !important; }
+    body.print-tutorial #tutorialPrint { display:block !important; }
+  }

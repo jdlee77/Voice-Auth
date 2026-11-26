@@ -1,6 +1,8 @@
 (() => {
   const $ = (id) => document.getElementById(id);
-  const S = { key: null, secret: '', version: 0, created: '', exported: true, cards: null };
+  const S = { key: null, secret: '', version: 0, created: '', exported: true, cards: null, source: '' };
+  const listeners = [];
+  const notify = () => listeners.forEach((fn) => fn());
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const when = (iso) => iso ? new Date(iso).toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
   const intIn = (id, lo, hi) => Math.min(hi, Math.max(lo, Math.floor(+$(id).value || lo)));
@@ -13,6 +15,7 @@
     renderKeyInfo(); clearCards();
   }
   function renderKeyInfo() {
+    setTimeout(notify, 0);
     $('keyInfo').innerHTML = S.key
       ? `<dt>Fingerprint</dt><dd class="mono"><b>${VA.fingerprint(S.key)}</b> (read aloud to confirm everyone has the same key)</dd>
          <dt>Version</dt><dd>v${S.version}${S.exported ? '' : ' · <span style="color:var(--bad)">not exported</span>'}</dd>
@@ -21,7 +24,7 @@
   }
   function newKey(version) {
     const b = new Uint8Array(20); crypto.getRandomValues(b);
-    S.exported = false; setKey(b, version, new Date().toISOString());
+    S.exported = false; S.source = 'new'; setKey(b, version, new Date().toISOString());
   }
   $('btnNew').onclick = () => {
     if (S.key && !confirm('Replace the loaded key? Cards printed with it will no longer match this tool.')) return;
@@ -62,7 +65,7 @@
         if (d.fingerprint && d.fingerprint !== VA.fingerprint(bytes)) throw new Error('Fingerprint mismatch: file is damaged');
         $('incName').value = d.incident || ''; $('incNo').value = d.incidentNo || ''; $('custodian').value = d.custodian || '';
         if (d.challengesPerCard) $('nCh').value = String(d.challengesPerCard);
-        S.exported = true; setKey(bytes, d.version || 1, d.created || '');
+        S.exported = true; S.source = 'import'; setKey(bytes, d.version || 1, d.created || '');
       } catch (err) { alert('Could not import key: ' + err.message); }
       e.target.value = '';
     };
@@ -82,7 +85,28 @@
     $('cards').innerHTML = html; S.cards = true; $('btnPrint').disabled = false;
     $('cardsNote').textContent = note;
   };
-  $('btnPrint').onclick = () => window.print();
+  // Printing: cards and the tutorial are separate print jobs. body.print-tutorial switches the print view to the tutorial.
+  function printCards() {
+    if (!S.cards) $('btnBuild').click();
+    document.body.classList.remove('print-tutorial');
+    window.print();
+  }
+  function printTutorial() {
+    $('tutorialPrint').innerHTML = Tutorial.html({ size: $('cardSize').value, custodian: $('custodian').value });
+    document.body.classList.add('print-tutorial');
+    window.addEventListener('afterprint', () => document.body.classList.remove('print-tutorial'), { once: true });
+    window.print();
+  }
+  $('btnPrint').onclick = printCards;
+  $('btnTutorial').onclick = printTutorial;
+
+  // For the setup slides (onboarding.js): read state, run the same actions as the main screen, hear about key changes.
+  window.VAApp = {
+    hasKey: () => !!S.key, exported: () => S.exported, source: () => S.source,
+    fingerprint: () => (S.key ? VA.fingerprint(S.key) : ''), version: () => S.version,
+    newKey: () => $('btnNew').click(), importKey: () => $('btnImport').click(), exportKey: () => $('btnExport').click(),
+    printCards, printTutorial, onChange: (fn) => listeners.push(fn),
+  };
 
   // ---------- self-test ----------
   (() => {

@@ -2,7 +2,7 @@
 // CardSheet.html(key, { from, count, challenges, size: 'page' | 'badge', version, fingerprint, incident, incidentNo, custodian })
 //   -> { html, note }   html goes in #cards; note says what was built and how to print it. Styles: cardsheet.css.
 // Full page: one page per card, with phonetics. Badge: 85.6 x 54 mm (ISO/IEC 7810 ID-1), front = all 31 daily codes,
-// back = up to BADGE_MAX challenge/response pairs; no phonetics (they don't fit, and operators read NATO phonetics anyway).
+// back = up to BADGE_MAX challenge/response pairs; no phonetics (they don't fit, and card holders read NATO phonetics anyway).
 const CardSheet = (() => {
   const core = typeof VA !== 'undefined' ? VA : require('./core.js');
   const BADGE_MAX = 32;
